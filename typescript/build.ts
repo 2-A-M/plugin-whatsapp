@@ -2,19 +2,10 @@
 
 /**
  * Standalone build script for @elizaos/plugin-whatsapp.
- *
- * Uses Bun's native bundler so the plugin can be built outside the
- * elizaOS monorepo (e.g. after `npm install` or in downstream projects).
- * The previous version imported `runBuild` from `../../../eliza/build-utils`
- * which only exists inside the monorepo, causing the npm-published package
- * to ship without compiled JavaScript.
+ * Uses Bun's native bundler — no monorepo build-utils dependency.
  */
 
-import { existsSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-
-const distDir = join(process.cwd(), "dist");
+import { execSync } from "node:child_process";
 
 const result = await Bun.build({
   entrypoints: ["src/index.ts"],
@@ -41,7 +32,7 @@ const result = await Bun.build({
     "readline",
     // Core dependency
     "@elizaos/core",
-    // Runtime dependencies (resolved from node_modules)
+    // Runtime dependencies (resolved from node_modules at runtime)
     "axios",
     "@hapi/boom",
     "@whiskeysockets/baileys",
@@ -61,15 +52,12 @@ if (!result.success) {
   process.exit(1);
 }
 
-// Create type declaration stub
-if (!existsSync(distDir)) {
-  await mkdir(distDir, { recursive: true });
+// Emit real declaration files via tsc
+try {
+  execSync("bunx tsc -p tsconfig.build.json", { stdio: "inherit" });
+} catch {
+  // Non-fatal — plugin works at runtime without .d.ts files
+  console.warn("[plugin-whatsapp] tsc declaration emit failed (non-fatal)");
 }
-const dtsContent = [
-  'export * from "../src/index";',
-  'export { default } from "../src/index";',
-  "",
-].join("\n");
-await writeFile(join(distDir, "index.d.ts"), dtsContent, "utf8");
 
 console.log("[plugin-whatsapp] Build complete");
