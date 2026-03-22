@@ -1,68 +1,63 @@
 #!/usr/bin/env bun
 
 /**
- * Build script for @elizaos/plugin-whatsapp TypeScript implementation
+ * Standalone build script for @elizaos/plugin-whatsapp.
+ * Uses Bun's native bundler — no monorepo build-utils dependency.
  */
 
-import { existsSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-import { runBuild } from "../../../eliza/build-utils";
+import { execSync } from "node:child_process";
 
-async function buildAll(): Promise<boolean> {
-  const nodeOk = await runBuild({
-    packageName: "@elizaos/plugin-whatsapp",
-    buildOptions: {
-      entrypoints: ["index.ts"],
-      outdir: "dist",
-      target: "node",
-      format: "esm",
-      external: [
-        // Node builtins
-        "fs",
-        "path",
-        "os",
-        "http",
-        "https",
-        // Core dependency
-        "@elizaos/core",
-        // Other externals
-        "axios",
-        "@hapi/boom",
-        "@whiskeysockets/baileys",
-        "pino",
-        "qrcode",
-        "qrcode-terminal",
-      ],
-      sourcemap: true,
-      minify: false,
-      generateDts: false,
-    },
-  });
+const result = await Bun.build({
+  entrypoints: ["src/index.ts"],
+  outdir: "dist",
+  target: "node",
+  format: "esm",
+  external: [
+    // Node builtins
+    "fs",
+    "path",
+    "os",
+    "http",
+    "https",
+    "crypto",
+    "stream",
+    "events",
+    "util",
+    "url",
+    "net",
+    "tls",
+    "zlib",
+    "buffer",
+    "child_process",
+    "readline",
+    // Core dependency
+    "@elizaos/core",
+    // Runtime dependencies (resolved from node_modules at runtime)
+    "axios",
+    "@hapi/boom",
+    "@whiskeysockets/baileys",
+    "pino",
+    "qrcode",
+    "qrcode-terminal",
+  ],
+  sourcemap: "linked",
+  minify: false,
+});
 
-  if (!nodeOk) return false;
-
-  // Ensure dist directory exists and create proper declaration entry points
-  const distDir = join(process.cwd(), "dist");
-  if (!existsSync(distDir)) {
-    await mkdir(distDir, { recursive: true });
+if (!result.success) {
+  console.error("Build failed:");
+  for (const log of result.logs) {
+    console.error(log);
   }
-
-  // Root types alias
-  const rootIndexDtsPath = join(distDir, "index.d.ts");
-  const rootAlias = ['export * from "./index";', 'export { default } from "./index";', ""].join(
-    "\n"
-  );
-  await writeFile(rootIndexDtsPath, rootAlias, "utf8");
-
-  return true;
+  process.exit(1);
 }
 
-buildAll()
-  .then((ok) => {
-    if (!ok) process.exit(1);
-  })
-  .catch((error) => {
-    console.error("Build script error:", error);
-    process.exit(1);
-  });
+// Emit real declaration files via tsc
+try {
+  execSync("bunx tsc -p tsconfig.build.json", { stdio: "inherit" });
+} catch {
+  // Non-fatal — plugin works at runtime without .d.ts files
+  console.warn("[plugin-whatsapp] tsc declaration emit failed (non-fatal)");
+}
+
+console.log("[plugin-whatsapp] Build complete");
