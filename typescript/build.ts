@@ -1,68 +1,75 @@
 #!/usr/bin/env bun
 
 /**
- * Build script for @elizaos/plugin-whatsapp TypeScript implementation
+ * Standalone build script for @elizaos/plugin-whatsapp.
+ *
+ * Uses Bun's native bundler so the plugin can be built outside the
+ * elizaOS monorepo (e.g. after `npm install` or in downstream projects).
+ * The previous version imported `runBuild` from `../../../eliza/build-utils`
+ * which only exists inside the monorepo, causing the npm-published package
+ * to ship without compiled JavaScript.
  */
 
 import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { runBuild } from "../../../eliza/build-utils";
 
-async function buildAll(): Promise<boolean> {
-  const nodeOk = await runBuild({
-    packageName: "@elizaos/plugin-whatsapp",
-    buildOptions: {
-      entrypoints: ["index.ts"],
-      outdir: "dist",
-      target: "node",
-      format: "esm",
-      external: [
-        // Node builtins
-        "fs",
-        "path",
-        "os",
-        "http",
-        "https",
-        // Core dependency
-        "@elizaos/core",
-        // Other externals
-        "axios",
-        "@hapi/boom",
-        "@whiskeysockets/baileys",
-        "pino",
-        "qrcode",
-        "qrcode-terminal",
-      ],
-      sourcemap: true,
-      minify: false,
-      generateDts: false,
-    },
-  });
+const distDir = join(process.cwd(), "dist");
 
-  if (!nodeOk) return false;
+const result = await Bun.build({
+  entrypoints: ["src/index.ts"],
+  outdir: "dist",
+  target: "node",
+  format: "esm",
+  external: [
+    // Node builtins
+    "fs",
+    "path",
+    "os",
+    "http",
+    "https",
+    "crypto",
+    "stream",
+    "events",
+    "util",
+    "url",
+    "net",
+    "tls",
+    "zlib",
+    "buffer",
+    "child_process",
+    "readline",
+    // Core dependency
+    "@elizaos/core",
+    // Runtime dependencies (resolved from node_modules)
+    "axios",
+    "@hapi/boom",
+    "@whiskeysockets/baileys",
+    "pino",
+    "qrcode",
+    "qrcode-terminal",
+  ],
+  sourcemap: "linked",
+  minify: false,
+});
 
-  // Ensure dist directory exists and create proper declaration entry points
-  const distDir = join(process.cwd(), "dist");
-  if (!existsSync(distDir)) {
-    await mkdir(distDir, { recursive: true });
+if (!result.success) {
+  console.error("Build failed:");
+  for (const log of result.logs) {
+    console.error(log);
   }
-
-  // Root types alias
-  const rootIndexDtsPath = join(distDir, "index.d.ts");
-  const rootAlias = ['export * from "./index";', 'export { default } from "./index";', ""].join(
-    "\n"
-  );
-  await writeFile(rootIndexDtsPath, rootAlias, "utf8");
-
-  return true;
+  process.exit(1);
 }
 
-buildAll()
-  .then((ok) => {
-    if (!ok) process.exit(1);
-  })
-  .catch((error) => {
-    console.error("Build script error:", error);
-    process.exit(1);
-  });
+// Create type declaration stub
+if (!existsSync(distDir)) {
+  await mkdir(distDir, { recursive: true });
+}
+const dtsContent = [
+  'export * from "../src/index";',
+  'export { default } from "../src/index";',
+  "",
+].join("\n");
+await writeFile(join(distDir, "index.d.ts"), dtsContent, "utf8");
+
+console.log("[plugin-whatsapp] Build complete");
