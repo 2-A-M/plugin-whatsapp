@@ -344,6 +344,9 @@ export interface UnifiedMessage {
   timestamp: number;
   type: "text" | "image" | "audio" | "video" | "document";
   content: string;
+  chatId?: string;
+  senderId?: string;
+  replyToId?: string;
 }
 
 /**

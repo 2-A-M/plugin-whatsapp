@@ -8,12 +8,18 @@ import type {
 
 export class MessageAdapter {
   toUnified(msg: proto.IWebMessageInfo): UnifiedMessage {
+    const chatId = msg.key?.remoteJid ?? "";
+    const senderId = msg.key?.participant ?? chatId;
+
     return {
       id: msg.key?.id ?? "",
-      from: msg.key?.remoteJid ?? "",
+      from: chatId,
       timestamp: Number(msg.messageTimestamp ?? 0),
       type: this.detectType(msg),
       content: this.extractContent(msg),
+      chatId,
+      senderId,
+      replyToId: this.extractReplyToId(msg),
     };
   }
 
@@ -92,7 +98,26 @@ export class MessageAdapter {
   }
 
   private extractContent(msg: proto.IWebMessageInfo): string {
-    return msg.message?.conversation ?? msg.message?.extendedTextMessage?.text ?? "";
+    return (
+      msg.message?.conversation ??
+      msg.message?.extendedTextMessage?.text ??
+      msg.message?.imageMessage?.caption ??
+      msg.message?.videoMessage?.caption ??
+      msg.message?.documentMessage?.caption ??
+      ""
+    );
+  }
+
+  private extractReplyToId(msg: proto.IWebMessageInfo): string | undefined {
+    const contextInfo =
+      msg.message?.extendedTextMessage?.contextInfo ??
+      msg.message?.imageMessage?.contextInfo ??
+      msg.message?.videoMessage?.contextInfo ??
+      msg.message?.documentMessage?.contextInfo;
+
+    return typeof contextInfo?.stanzaId === "string"
+      ? contextInfo.stanzaId
+      : undefined;
   }
 
   private renderTemplate(template: WhatsAppTemplate): string {

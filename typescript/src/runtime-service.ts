@@ -1,0 +1,565 @@
+import {
+  ChannelType,
+  createUniqueUuid,
+  type Content,
+  type IAgentRuntime,
+  type Memory,
+  Service,
+  type UUID,
+} from "@elizaos/core";
+import { BaileysClient } from "./clients/baileys-client";
+import { WhatsAppClient } from "./client";
+import { checkWhatsAppUserAccess } from "./accounts";
+import {
+  chunkWhatsAppText,
+  isWhatsAppGroupJid,
+  normalizeWhatsAppTarget,
+  resolveWhatsAppSystemLocation,
+} from "./normalize";
+import type {
+  BaileysConfig,
+  CloudAPIConfig,
+  ConnectionStatus,
+  UnifiedMessage,
+  WhatsAppIncomingMessage,
+  WhatsAppMessageResponse,
+  WhatsAppWebhookEvent,
+} from "./types";
+
+type Transport = "baileys" | "cloudapi";
+
+type RuntimeServiceConfig =
+  | {
+      transport: "baileys";
+      authDir: string;
+      dmPolicy?: "open" | "allowlist" | "pairing" | "disabled";
+      groupPolicy?: "open" | "allowlist" | "disabled";
+      allowFrom?: string[];
+      groupAllowFrom?: string[];
+    }
+  | {
+      transport: "cloudapi";
+      accessToken: string;
+      phoneNumberId: string;
+      webhookVerifyToken?: string;
+      apiVersion?: string;
+      dmPolicy?: "open" | "allowlist" | "pairing" | "disabled";
+      groupPolicy?: "open" | "allowlist" | "disabled";
+      allowFrom?: string[];
+      groupAllowFrom?: string[];
+    };
+
+function readStringSetting(
+  runtime: IAgentRuntime,
+  key: string,
+): string | undefined {
+  const value = runtime.getSetting(key);
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value.trim();
+  }
+
+  const envValue = process.env[key];
+  if (typeof envValue === "string" && envValue.trim().length > 0) {
+    return envValue.trim();
+  }
+
+  return undefined;
+}
+
+function readCsvSetting(runtime: IAgentRuntime, key: string): string[] {
+  const value = readStringSetting(runtime, key);
+  if (!value) {
+    return [];
+  }
+
+  return value
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+}
+
+function resolveRuntimeConfig(
+  runtime: IAgentRuntime,
+): RuntimeServiceConfig | null {
+  const dmPolicy = readStringSetting(runtime, "WHATSAPP_DM_POLICY") as
+    | "open"
+    | "allowlist"
+    | "pairing"
+    | "disabled"
+    | undefined;
+  const groupPolicy = readStringSetting(runtime, "WHATSAPP_GROUP_POLICY") as
+    | "open"
+    | "allowlist"
+    | "disabled"
+    | undefined;
+  const allowFrom = readCsvSetting(runtime, "WHATSAPP_ALLOW_FROM");
+  const groupAllowFrom = readCsvSetting(runtime, "WHATSAPP_GROUP_ALLOW_FROM");
+
+  const authDir =
+    readStringSetting(runtime, "WHATSAPP_AUTH_DIR") ??
+    readStringSetting(runtime, "WHATSAPP_SESSION_PATH");
+  if (authDir) {
+    return {
+      transport: "baileys",
+      authDir,
+      dmPolicy,
+      groupPolicy,
+      allowFrom,
+      groupAllowFrom,
+    };
+  }
+
+  const accessToken = readStringSetting(runtime, "WHATSAPP_ACCESS_TOKEN");
+  const phoneNumberId = readStringSetting(runtime, "WHATSAPP_PHONE_NUMBER_ID");
+  if (accessToken && phoneNumberId) {
+    return {
+      transport: "cloudapi",
+      accessToken,
+      phoneNumberId,
+      webhookVerifyToken: readStringSetting(
+        runtime,
+        "WHATSAPP_WEBHOOK_VERIFY_TOKEN",
+      ),
+      apiVersion: readStringSetting(runtime, "WHATSAPP_API_VERSION"),
+      dmPolicy,
+      groupPolicy,
+      allowFrom,
+      groupAllowFrom,
+    };
+  }
+
+  return null;
+}
+
+function toTimestampMs(value: number | string | undefined): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return Date.now();
+  }
+
+  return parsed >= 1_000_000_000_000 ? parsed : parsed * 1000;
+}
+
+function toMemoryId(
+  runtime: IAgentRuntime,
+  chatId: string,
+  messageId: string,
+): UUID {
+  return createUniqueUuid(runtime, `whatsapp:${chatId}:${messageId}`) as UUID;
+}
+
+function extractWebhookText(message: WhatsAppIncomingMessage): string {
+  if (typeof message.text?.body === "string" && message.text.body.trim()) {
+    return message.text.body.trim();
+  }
+
+  if (
+    typeof message.interactive?.button_reply?.title === "string" &&
+    message.interactive.button_reply.title.trim()
+  ) {
+    return message.interactive.button_reply.title.trim();
+  }
+
+  if (
+    typeof message.interactive?.list_reply?.title === "string" &&
+    message.interactive.list_reply.title.trim()
+  ) {
+    return message.interactive.list_reply.title.trim();
+  }
+
+  if (
+    typeof message.interactive?.nfm_reply?.body === "string" &&
+    message.interactive.nfm_reply.body.trim()
+  ) {
+    return message.interactive.nfm_reply.body.trim();
+  }
+
+  if (typeof message.image?.caption === "string" && message.image.caption.trim()) {
+    return message.image.caption.trim();
+  }
+
+  if (
+    typeof message.video?.caption === "string" &&
+    message.video.caption.trim()
+  ) {
+    return message.video.caption.trim();
+  }
+
+  if (
+    typeof message.document?.caption === "string" &&
+    message.document.caption.trim()
+  ) {
+    return message.document.caption.trim();
+  }
+
+  if (message.reaction?.emoji) {
+    return `Reaction: ${message.reaction.emoji}`;
+  }
+
+  if (message.location) {
+    const { latitude, longitude } = message.location;
+    return `Location: ${latitude}, ${longitude}`;
+  }
+
+  return "";
+}
+
+export class WhatsAppConnectorService extends Service {
+  static serviceType = "whatsapp";
+
+  capabilityDescription =
+    "The agent is able to send and receive messages on whatsapp";
+
+  public connected = false;
+  public phoneNumber: string | null = null;
+
+  private client: BaileysClient | WhatsAppClient | null = null;
+  private config: RuntimeServiceConfig | null = null;
+
+  static async start(runtime: IAgentRuntime): Promise<WhatsAppConnectorService> {
+    const service = new WhatsAppConnectorService(runtime);
+    await service.initialize();
+    return service;
+  }
+
+  async initialize(): Promise<void> {
+    this.config = resolveRuntimeConfig(this.runtime);
+    if (!this.config) {
+      this.runtime.logger.warn(
+        { src: "plugin:whatsapp", agentId: this.runtime.agentId },
+        "WhatsApp connector is not configured",
+      );
+      return;
+    }
+
+    this.client =
+      this.config.transport === "baileys"
+        ? new BaileysClient({
+            authMethod: "baileys",
+            authDir: this.config.authDir,
+            printQRInTerminal: false,
+          } satisfies BaileysConfig)
+        : new WhatsAppClient({
+            accessToken: this.config.accessToken,
+            phoneNumberId: this.config.phoneNumberId,
+            webhookVerifyToken: this.config.webhookVerifyToken,
+            apiVersion: this.config.apiVersion,
+          } satisfies CloudAPIConfig);
+
+    this.bindClientEvents(this.client);
+    await this.client.start();
+
+    if (this.config.transport === "cloudapi") {
+      this.connected = true;
+    }
+  }
+
+  async stop(): Promise<void> {
+    if (this.client) {
+      await this.client.stop();
+    }
+    this.connected = false;
+    this.phoneNumber = null;
+  }
+
+  async handleWebhook(event: WhatsAppWebhookEvent): Promise<void> {
+    for (const entry of event.entry ?? []) {
+      for (const change of entry.changes ?? []) {
+        const value = change.value;
+        if (typeof value?.metadata?.display_phone_number === "string") {
+          this.phoneNumber = value.metadata.display_phone_number;
+        }
+
+        for (const message of value?.messages ?? []) {
+          await this.handleIncomingWebhookMessage(message);
+        }
+      }
+    }
+  }
+
+  verifyWebhook(mode: string, token: string, challenge: string): string | null {
+    const expectedToken =
+      this.config?.transport === "cloudapi"
+        ? this.config.webhookVerifyToken
+        : readStringSetting(this.runtime, "WHATSAPP_WEBHOOK_VERIFY_TOKEN");
+
+    if (
+      mode === "subscribe" &&
+      expectedToken &&
+      token === expectedToken &&
+      challenge
+    ) {
+      return challenge;
+    }
+
+    return null;
+  }
+
+  private bindClientEvents(client: BaileysClient | WhatsAppClient): void {
+    client.on("connection", (status: ConnectionStatus) => {
+      this.connected = status === "open";
+      if (status === "open" && client instanceof BaileysClient) {
+        const nextPhone = client.getPhoneNumber();
+        this.phoneNumber =
+          (nextPhone && normalizeWhatsAppTarget(nextPhone)) ?? nextPhone;
+      }
+      if (status === "close") {
+        this.phoneNumber = null;
+      }
+    });
+
+    client.on("ready", () => {
+      this.connected = true;
+      if (client instanceof BaileysClient) {
+        const nextPhone = client.getPhoneNumber();
+        this.phoneNumber =
+          (nextPhone && normalizeWhatsAppTarget(nextPhone)) ?? nextPhone;
+      }
+    });
+
+    client.on("message", (message: UnifiedMessage) => {
+      void this.handleUnifiedMessage(message).catch((error: unknown) => {
+        this.runtime.logger.error(
+          {
+            src: "plugin:whatsapp",
+            agentId: this.runtime.agentId,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          "Failed to process inbound WhatsApp message",
+        );
+      });
+    });
+
+    client.on("error", (error: unknown) => {
+      this.runtime.logger.error(
+        {
+          src: "plugin:whatsapp",
+          agentId: this.runtime.agentId,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        "WhatsApp client error",
+      );
+    });
+  }
+
+  private async handleUnifiedMessage(message: UnifiedMessage): Promise<void> {
+    const chatId = message.chatId ?? message.from;
+    const senderId = message.senderId ?? message.from;
+    const text = typeof message.content === "string" ? message.content.trim() : "";
+
+    if (!chatId || !senderId || !text) {
+      return;
+    }
+
+    await this.processIncomingMessage({
+      chatId,
+      senderId,
+      text,
+      externalMessageId: message.id,
+      replyToExternalMessageId: message.replyToId,
+      createdAt: toTimestampMs(message.timestamp),
+    });
+  }
+
+  private async handleIncomingWebhookMessage(
+    message: WhatsAppIncomingMessage,
+  ): Promise<void> {
+    const text = extractWebhookText(message);
+    if (!text) {
+      return;
+    }
+
+    const normalizedSender = normalizeWhatsAppTarget(message.from) ?? message.from;
+
+    await this.processIncomingMessage({
+      chatId: normalizedSender,
+      senderId: normalizedSender,
+      text,
+      externalMessageId: message.id,
+      replyToExternalMessageId: message.context?.id,
+      createdAt: toTimestampMs(message.timestamp),
+    });
+  }
+
+  private async processIncomingMessage(params: {
+    chatId: string;
+    senderId: string;
+    text: string;
+    externalMessageId: string;
+    replyToExternalMessageId?: string;
+    createdAt: number;
+  }): Promise<void> {
+    if (!this.runtime.messageService) {
+      throw new Error("WhatsApp connector requires runtime.messageService");
+    }
+
+    const isGroup = isWhatsAppGroupJid(params.chatId);
+    const normalizedSender =
+      normalizeWhatsAppTarget(params.senderId) ?? params.senderId;
+
+    const accountConfig = {
+      dmPolicy: this.config?.dmPolicy,
+      groupPolicy: this.config?.groupPolicy,
+      allowFrom: this.config?.allowFrom,
+      groupAllowFrom: this.config?.groupAllowFrom,
+    };
+
+    const access = await checkWhatsAppUserAccess({
+      runtime: this.runtime,
+      identifier: normalizedSender,
+      accountConfig,
+      isGroup,
+      ...(isGroup ? { groupId: params.chatId } : {}),
+      metadata: { senderId: normalizedSender },
+    });
+
+    if (!access.allowed) {
+      if (access.replyMessage) {
+        await this.sendTextMessage(params.chatId, access.replyMessage);
+      }
+      return;
+    }
+
+    const channelType = isGroup ? ChannelType.GROUP : ChannelType.DM;
+    const roomId = createUniqueUuid(
+      this.runtime,
+      `whatsapp-room:${params.chatId}`,
+    ) as UUID;
+    const worldId = createUniqueUuid(
+      this.runtime,
+      `whatsapp-world:${params.chatId}`,
+    ) as UUID;
+    const entityId = createUniqueUuid(
+      this.runtime,
+      `whatsapp-entity:${normalizedSender}`,
+    ) as UUID;
+    const inboundMemoryId = toMemoryId(
+      this.runtime,
+      params.chatId,
+      params.externalMessageId,
+    );
+
+    await this.runtime.ensureConnection({
+      entityId,
+      roomId,
+      userName: normalizedSender,
+      name: normalizedSender,
+      source: "whatsapp",
+      channelId: params.chatId,
+      type: channelType,
+      worldId,
+      worldName: resolveWhatsAppSystemLocation({
+        chatType: isGroup ? "group" : "user",
+        chatId: params.chatId,
+      }),
+    });
+
+    const inboundMemory: Memory = {
+      id: inboundMemoryId,
+      entityId,
+      agentId: this.runtime.agentId,
+      roomId,
+      content: {
+        text: params.text,
+        source: "whatsapp",
+        channelType,
+        from: normalizedSender,
+        messageId: params.externalMessageId,
+        ...(params.replyToExternalMessageId
+          ? {
+              inReplyTo: toMemoryId(
+                this.runtime,
+                params.chatId,
+                params.replyToExternalMessageId,
+              ),
+            }
+          : {}),
+      },
+      metadata: {
+        type: "message",
+        rawChatId: params.chatId,
+        rawSenderId: params.senderId,
+      },
+      createdAt: params.createdAt,
+    };
+
+    const callback = async (content: Content): Promise<Memory[]> => {
+      const text = typeof content.text === "string" ? content.text.trim() : "";
+      if (!text) {
+        return [];
+      }
+
+      const chunks = chunkWhatsAppText(text);
+      const responseMemories: Memory[] = [];
+
+      for (const [index, chunk] of chunks.entries()) {
+        const response = await this.sendTextMessage(
+          params.chatId,
+          chunk,
+          params.externalMessageId,
+        );
+        const externalResponseId =
+          response.messages?.[0]?.id ??
+          `${params.externalMessageId}:response:${index}:${Date.now()}`;
+
+        responseMemories.push({
+          id: toMemoryId(this.runtime, params.chatId, externalResponseId),
+          entityId: this.runtime.agentId,
+          agentId: this.runtime.agentId,
+          roomId,
+          content: {
+            ...content,
+            text: chunk,
+            source: "whatsapp",
+            channelType,
+            inReplyTo: inboundMemoryId,
+          },
+          metadata: {
+            type: "message",
+            rawChatId: params.chatId,
+            externalMessageId: externalResponseId,
+          },
+          createdAt: Date.now(),
+        });
+      }
+
+      return responseMemories;
+    };
+
+    await this.runtime.messageService.handleMessage(
+      this.runtime,
+      inboundMemory,
+      callback,
+    );
+  }
+
+  private async sendTextMessage(
+    chatId: string,
+    text: string,
+    replyToMessageId?: string,
+  ): Promise<WhatsAppMessageResponse> {
+    if (!this.client || !this.config) {
+      throw new Error("WhatsApp client is not initialized");
+    }
+
+    if (this.config.transport === "baileys") {
+      return await this.client.sendMessage({
+        type: "text",
+        to: chatId,
+        content: text,
+        replyToMessageId,
+      });
+    }
+
+    const response = await this.client.sendMessage({
+      type: "text",
+      to: normalizeWhatsAppTarget(chatId) ?? chatId,
+      content: text,
+      replyToMessageId,
+    });
+
+    return "data" in response
+      ? (response.data as WhatsAppMessageResponse)
+      : (response as WhatsAppMessageResponse);
+  }
+}

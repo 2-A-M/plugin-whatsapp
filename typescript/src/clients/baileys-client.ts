@@ -86,4 +86,8 @@ export class BaileysClient extends EventEmitter implements IWhatsAppClient {
   getConnectionStatus(): ConnectionStatus {
     return this.connection.getStatus();
   }
+
+  getPhoneNumber(): string | null {
+    return this.connection.getSocket()?.user?.id?.split(":")[0] ?? null;
+  }
 }

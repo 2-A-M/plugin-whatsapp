@@ -4,6 +4,7 @@ import { sendMessageAction, sendReactionAction } from "./actions";
 import { ClientFactory } from "./clients/factory";
 import type { IWhatsAppClient } from "./clients/interface";
 import { MessageHandler, WebhookHandler } from "./handlers";
+import { WhatsAppConnectorService } from "./runtime-service";
 import type {
   ConnectionStatus,
   WhatsAppConfig,
@@ -71,6 +72,7 @@ const whatsappPlugin: Plugin = {
   name: "whatsapp",
   description: "WhatsApp integration for ElizaOS (Cloud API + Baileys)",
   actions: [sendMessageAction, sendReactionAction],
+  services: [WhatsAppConnectorService],
 };
 
 export default whatsappPlugin;
@@ -127,4 +129,5 @@ export {
 } from "./normalize";
 
 export { ClientFactory } from "./clients/factory";
+export { WhatsAppConnectorService } from "./runtime-service";
 export * from "./types";
