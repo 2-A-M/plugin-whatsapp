@@ -51,7 +51,7 @@
     "vitest": "^3.0.0"
   },
   "peerDependencies": {
-    "@elizaos/core": "2.0.0-alpha.114"
+    "@elizaos/core": "workspace:*"
   },
   "agentConfig": {
     "pluginType": "elizaos:client:1.0.0",
