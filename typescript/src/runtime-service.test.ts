@@ -1,5 +1,11 @@
-import { ChannelType, type Content, type IAgentRuntime, type Memory } from "@elizaos/core";
+import {
+  ChannelType,
+  type Content,
+  type IAgentRuntime,
+  type Memory,
+} from "@elizaos/core";
 import { describe, expect, it, vi } from "vitest";
+import { WHATSAPP_TEXT_CHUNK_LIMIT } from "./normalize";
 import { WhatsAppConnectorService } from "./runtime-service";
 import type { WhatsAppWebhookEvent } from "./types";
 
@@ -193,5 +199,215 @@ describe("WhatsAppConnectorService", () => {
     );
     expect(inboundMemory?.content.from).toBe("+14155550100");
     expect(inboundMemory?.content.channelType).toBe(ChannelType.GROUP);
+  });
+
+  it("ignores webhook messages that do not produce text content", async () => {
+    const runtime = createRuntimeMock();
+    const service = new WhatsAppConnectorService(runtime);
+
+    (service as unknown as {
+      config: Record<string, unknown>;
+      client: Record<string, unknown>;
+    }).config = {
+      transport: "cloudapi",
+      accessToken: "test-token",
+      phoneNumberId: "1234567890",
+    };
+    (service as unknown as { client: Record<string, unknown> }).client = {
+      sendMessage: vi.fn(),
+      stop: vi.fn(),
+      on: vi.fn(),
+    };
+
+    const event: WhatsAppWebhookEvent = {
+      object: "whatsapp_business_account",
+      entry: [
+        {
+          id: "entry-1",
+          changes: [
+            {
+              field: "messages",
+              value: {
+                messaging_product: "whatsapp",
+                metadata: {
+                  display_phone_number: "+14155550999",
+                  phone_number_id: "1234567890",
+                },
+                messages: [
+                  {
+                    from: "14155550100",
+                    id: "wamid.in.1",
+                    timestamp: "1710000000",
+                    type: "image",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    await service.handleWebhook(event);
+
+    expect(runtime.ensureConnection).not.toHaveBeenCalled();
+    expect(vi.mocked(runtime.messageService!.handleMessage)).not.toHaveBeenCalled();
+  });
+
+  it("blocks inbound DMs when the policy is disabled", async () => {
+    const runtime = createRuntimeMock();
+    const service = new WhatsAppConnectorService(runtime);
+    const sendMessage = vi.fn();
+
+    (service as unknown as {
+      config: Record<string, unknown>;
+      client: Record<string, unknown>;
+    }).config = {
+      transport: "cloudapi",
+      accessToken: "test-token",
+      phoneNumberId: "1234567890",
+      dmPolicy: "disabled",
+    };
+    (service as unknown as { client: Record<string, unknown> }).client = {
+      sendMessage,
+      stop: vi.fn(),
+      on: vi.fn(),
+    };
+
+    await service.handleWebhook({
+      object: "whatsapp_business_account",
+      entry: [
+        {
+          id: "entry-1",
+          changes: [
+            {
+              field: "messages",
+              value: {
+                messaging_product: "whatsapp",
+                metadata: {
+                  display_phone_number: "+14155550999",
+                  phone_number_id: "1234567890",
+                },
+                messages: [
+                  {
+                    from: "14155550100",
+                    id: "wamid.in.1",
+                    timestamp: "1710000000",
+                    text: {
+                      body: "hello from whatsapp",
+                    },
+                    type: "text",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(runtime.ensureConnection).not.toHaveBeenCalled();
+    expect(vi.mocked(runtime.messageService!.handleMessage)).not.toHaveBeenCalled();
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+
+  it("chunks long replies into multiple outbound WhatsApp messages", async () => {
+    const runtime = createRuntimeMock();
+    const service = new WhatsAppConnectorService(runtime);
+    const sendMessage = vi
+      .fn()
+      .mockResolvedValueOnce({
+        data: {
+          messaging_product: "whatsapp",
+          contacts: [{ input: "+14155550100", wa_id: "14155550100" }],
+          messages: [{ id: "wamid.out.1" }],
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          messaging_product: "whatsapp",
+          contacts: [{ input: "+14155550100", wa_id: "14155550100" }],
+          messages: [{ id: "wamid.out.2" }],
+        },
+      });
+
+    (service as unknown as {
+      config: Record<string, unknown>;
+      client: Record<string, unknown>;
+    }).config = {
+      transport: "cloudapi",
+      accessToken: "test-token",
+      phoneNumberId: "1234567890",
+    };
+    (service as unknown as { client: Record<string, unknown> }).client = {
+      sendMessage,
+      stop: vi.fn(),
+      on: vi.fn(),
+    };
+
+    const longReply = `${"a".repeat(WHATSAPP_TEXT_CHUNK_LIMIT)} ${"b".repeat(32)}`;
+    let outboundMemories: Memory[] = [];
+
+    vi.mocked(runtime.messageService!.handleMessage).mockImplementation(
+      async (
+        _runtime: IAgentRuntime,
+        _message: Memory,
+        callback: (content: Content) => Promise<Memory[]>,
+      ) => {
+        outboundMemories = await callback({ text: longReply });
+        return {
+          didRespond: true,
+          responseContent: { text: longReply },
+          responseMessages: outboundMemories,
+          state: { values: {}, data: {}, text: "" },
+          mode: "simple",
+        };
+      },
+    );
+
+    await service.handleWebhook({
+      object: "whatsapp_business_account",
+      entry: [
+        {
+          id: "entry-1",
+          changes: [
+            {
+              field: "messages",
+              value: {
+                messaging_product: "whatsapp",
+                metadata: {
+                  display_phone_number: "+14155550999",
+                  phone_number_id: "1234567890",
+                },
+                messages: [
+                  {
+                    from: "14155550100",
+                    id: "wamid.in.1",
+                    timestamp: "1710000000",
+                    text: {
+                      body: "hello from whatsapp",
+                    },
+                    type: "text",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(sendMessage).toHaveBeenCalledTimes(2);
+    expect(outboundMemories).toHaveLength(2);
+    expect(outboundMemories[0]?.content.text.length).toBeLessThanOrEqual(
+      WHATSAPP_TEXT_CHUNK_LIMIT,
+    );
+    expect(outboundMemories[1]?.content.text.length).toBeGreaterThan(0);
+    expect(
+      `${String(outboundMemories[0]?.content.text)} ${String(outboundMemories[1]?.content.text)}`.replace(
+        /\s+/g,
+        " ",
+      ),
+    ).toBe(longReply);
   });
 });
