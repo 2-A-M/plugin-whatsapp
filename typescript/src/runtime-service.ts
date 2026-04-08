@@ -206,6 +206,7 @@ function extractWebhookText(message: WhatsAppIncomingMessage): string {
 
 export class WhatsAppConnectorService extends Service {
   static serviceType = "whatsapp";
+  protected declare runtime: IAgentRuntime;
 
   capabilityDescription =
     "The agent is able to send and receive messages on whatsapp";
@@ -215,6 +216,13 @@ export class WhatsAppConnectorService extends Service {
 
   private client: BaileysClient | WhatsAppClient | null = null;
   private config: RuntimeServiceConfig | null = null;
+
+  constructor(runtime?: IAgentRuntime) {
+    super(runtime);
+    if (runtime) {
+      this.runtime = runtime;
+    }
+  }
 
   static async start(runtime: IAgentRuntime): Promise<WhatsAppConnectorService> {
     const service = new WhatsAppConnectorService(runtime);
@@ -542,18 +550,12 @@ export class WhatsAppConnectorService extends Service {
       throw new Error("WhatsApp client is not initialized");
     }
 
-    if (this.config.transport === "baileys") {
-      return await this.client.sendMessage({
-        type: "text",
-        to: chatId,
-        content: text,
-        replyToMessageId,
-      });
-    }
-
     const response = await this.client.sendMessage({
       type: "text",
-      to: normalizeWhatsAppTarget(chatId) ?? chatId,
+      to:
+        this.config.transport === "baileys"
+          ? chatId
+          : normalizeWhatsAppTarget(chatId) ?? chatId,
       content: text,
       replyToMessageId,
     });
