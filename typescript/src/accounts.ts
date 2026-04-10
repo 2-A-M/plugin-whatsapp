@@ -1,5 +1,9 @@
 import type { IAgentRuntime } from "@elizaos/core";
-import { checkPairingAllowed, isInAllowlist, type PairingCheckResult } from "@elizaos/core";
+import {
+  checkPairingAllowed,
+  isInAllowlist,
+  type PairingCheckResult,
+} from "@elizaos/core";
 
 /**
  * Default account identifier used when no specific account is configured
@@ -122,7 +126,9 @@ export function normalizeAccountId(accountId?: string | null): string {
 /**
  * Gets the multi-account configuration from runtime settings
  */
-export function getMultiAccountConfig(runtime: IAgentRuntime): WhatsAppMultiAccountConfig {
+export function getMultiAccountConfig(
+  runtime: IAgentRuntime,
+): WhatsAppMultiAccountConfig {
   const characterWhatsApp = runtime.character?.settings?.whatsapp as
     | WhatsAppMultiAccountConfig
     | undefined;
@@ -152,10 +158,16 @@ export function listWhatsAppAccountIds(runtime: IAgentRuntime): string[] {
   const ids = new Set<string>();
 
   // Check if default account is configured
-  const envToken = runtime.getSetting("WHATSAPP_ACCESS_TOKEN") as string | undefined;
-  const envPhoneId = runtime.getSetting("WHATSAPP_PHONE_NUMBER_ID") as string | undefined;
+  const envToken = runtime.getSetting("WHATSAPP_ACCESS_TOKEN") as
+    | string
+    | undefined;
+  const envPhoneId = runtime.getSetting("WHATSAPP_PHONE_NUMBER_ID") as
+    | string
+    | undefined;
 
-  const baseConfigured = Boolean(config.accessToken?.trim() && config.phoneNumberId?.trim());
+  const baseConfigured = Boolean(
+    config.accessToken?.trim() && config.phoneNumberId?.trim(),
+  );
   const envConfigured = Boolean(envToken?.trim() && envPhoneId?.trim());
 
   if (baseConfigured || envConfigured) {
@@ -182,7 +194,9 @@ export function listWhatsAppAccountIds(runtime: IAgentRuntime): string[] {
 /**
  * Resolves the default account ID to use
  */
-export function resolveDefaultWhatsAppAccountId(runtime: IAgentRuntime): string {
+export function resolveDefaultWhatsAppAccountId(
+  runtime: IAgentRuntime,
+): string {
   const ids = listWhatsAppAccountIds(runtime);
   if (ids.includes(DEFAULT_ACCOUNT_ID)) {
     return DEFAULT_ACCOUNT_ID;
@@ -195,7 +209,7 @@ export function resolveDefaultWhatsAppAccountId(runtime: IAgentRuntime): string 
  */
 function getAccountConfig(
   runtime: IAgentRuntime,
-  accountId: string
+  accountId: string,
 ): WhatsAppAccountRuntimeConfig | undefined {
   const config = getMultiAccountConfig(runtime);
   const accounts = config.accounts;
@@ -212,7 +226,9 @@ function getAccountConfig(
 
   // Try normalized match
   const normalized = normalizeAccountId(accountId);
-  const matchKey = Object.keys(accounts).find((key) => normalizeAccountId(key) === normalized);
+  const matchKey = Object.keys(accounts).find(
+    (key) => normalizeAccountId(key) === normalized,
+  );
   return matchKey ? accounts[matchKey] : undefined;
 }
 
@@ -221,7 +237,7 @@ function getAccountConfig(
  */
 export function resolveWhatsAppToken(
   runtime: IAgentRuntime,
-  accountId: string
+  accountId: string,
 ): WhatsAppTokenResolution {
   const multiConfig = getMultiAccountConfig(runtime);
   const accountConfig = getAccountConfig(runtime, accountId);
@@ -238,7 +254,9 @@ export function resolveWhatsAppToken(
     }
 
     // Check environment/runtime settings
-    const envToken = runtime.getSetting("WHATSAPP_ACCESS_TOKEN") as string | undefined;
+    const envToken = runtime.getSetting("WHATSAPP_ACCESS_TOKEN") as
+      | string
+      | undefined;
     if (envToken?.trim()) {
       return { token: envToken.trim(), source: "env" };
     }
@@ -254,32 +272,50 @@ export function resolveWhatsAppToken(
  * Removes undefined values from an object to prevent them from overwriting during spread
  */
 function filterDefined<T extends object>(obj: T): Partial<T> {
-  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as Partial<T>;
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined),
+  ) as Partial<T>;
 }
 
 function mergeWhatsAppAccountConfig(
   runtime: IAgentRuntime,
-  accountId: string
+  accountId: string,
 ): WhatsAppAccountRuntimeConfig {
   const multiConfig = getMultiAccountConfig(runtime);
   const { accounts: _ignored, ...baseConfig } = multiConfig;
   const accountConfig = getAccountConfig(runtime, accountId) ?? {};
 
   // Get environment/runtime settings for the base config
-  const envToken = runtime.getSetting("WHATSAPP_ACCESS_TOKEN") as string | undefined;
-  const envPhoneId = runtime.getSetting("WHATSAPP_PHONE_NUMBER_ID") as string | undefined;
-  const envBusinessId = runtime.getSetting("WHATSAPP_BUSINESS_ACCOUNT_ID") as string | undefined;
-  const envWebhookToken = runtime.getSetting("WHATSAPP_WEBHOOK_VERIFY_TOKEN") as string | undefined;
-  const envDmPolicy = runtime.getSetting("WHATSAPP_DM_POLICY") as string | undefined;
-  const envGroupPolicy = runtime.getSetting("WHATSAPP_GROUP_POLICY") as string | undefined;
+  const envToken = runtime.getSetting("WHATSAPP_ACCESS_TOKEN") as
+    | string
+    | undefined;
+  const envPhoneId = runtime.getSetting("WHATSAPP_PHONE_NUMBER_ID") as
+    | string
+    | undefined;
+  const envBusinessId = runtime.getSetting("WHATSAPP_BUSINESS_ACCOUNT_ID") as
+    | string
+    | undefined;
+  const envWebhookToken = runtime.getSetting("WHATSAPP_WEBHOOK_VERIFY_TOKEN") as
+    | string
+    | undefined;
+  const envDmPolicy = runtime.getSetting("WHATSAPP_DM_POLICY") as
+    | string
+    | undefined;
+  const envGroupPolicy = runtime.getSetting("WHATSAPP_GROUP_POLICY") as
+    | string
+    | undefined;
 
   const envConfig: WhatsAppAccountRuntimeConfig = {
     accessToken: envToken || undefined,
     phoneNumberId: envPhoneId || undefined,
     businessAccountId: envBusinessId || undefined,
     webhookVerifyToken: envWebhookToken || undefined,
-    dmPolicy: envDmPolicy as WhatsAppAccountRuntimeConfig["dmPolicy"] | undefined,
-    groupPolicy: envGroupPolicy as WhatsAppAccountRuntimeConfig["groupPolicy"] | undefined,
+    dmPolicy: envDmPolicy as
+      | WhatsAppAccountRuntimeConfig["dmPolicy"]
+      | undefined,
+    groupPolicy: envGroupPolicy as
+      | WhatsAppAccountRuntimeConfig["groupPolicy"]
+      | undefined,
   };
 
   // Merge order: env defaults < base config < account config
@@ -296,7 +332,7 @@ function mergeWhatsAppAccountConfig(
  */
 export function resolveWhatsAppAccount(
   runtime: IAgentRuntime,
-  accountId?: string | null
+  accountId?: string | null,
 ): ResolvedWhatsAppAccount {
   const normalizedAccountId = normalizeAccountId(accountId);
   const multiConfig = getMultiAccountConfig(runtime);
@@ -306,7 +342,10 @@ export function resolveWhatsAppAccount(
   const accountEnabled = merged.enabled !== false;
   const enabled = baseEnabled && accountEnabled;
 
-  const { token, source: tokenSource } = resolveWhatsAppToken(runtime, normalizedAccountId);
+  const { token, source: tokenSource } = resolveWhatsAppToken(
+    runtime,
+    normalizedAccountId,
+  );
   const phoneNumberId = merged.phoneNumberId?.trim() || "";
 
   // Determine if this account is actually configured
@@ -328,7 +367,9 @@ export function resolveWhatsAppAccount(
 /**
  * Lists all enabled WhatsApp accounts
  */
-export function listEnabledWhatsAppAccounts(runtime: IAgentRuntime): ResolvedWhatsAppAccount[] {
+export function listEnabledWhatsAppAccounts(
+  runtime: IAgentRuntime,
+): ResolvedWhatsAppAccount[] {
   return listWhatsAppAccountIds(runtime)
     .map((accountId) => resolveWhatsAppAccount(runtime, accountId))
     .filter((account) => account.enabled && account.configured);
@@ -348,7 +389,7 @@ export function isMultiAccountEnabled(runtime: IAgentRuntime): boolean {
 export function resolveWhatsAppGroupConfig(
   runtime: IAgentRuntime,
   accountId: string,
-  groupId: string
+  groupId: string,
 ): WhatsAppGroupRuntimeConfig | undefined {
   const multiConfig = getMultiAccountConfig(runtime);
   const accountConfig = getAccountConfig(runtime, accountId);
@@ -387,12 +428,16 @@ export function isWhatsAppUserAllowed(params: {
 
     // Check group-specific allowlist first
     if (groupConfig?.allowFrom?.length) {
-      return groupConfig.allowFrom.some((allowed) => String(allowed) === identifier);
+      return groupConfig.allowFrom.some(
+        (allowed) => String(allowed) === identifier,
+      );
     }
 
     // Check account-level group allowlist
     if (accountConfig.groupAllowFrom?.length) {
-      return accountConfig.groupAllowFrom.some((allowed) => String(allowed) === identifier);
+      return accountConfig.groupAllowFrom.some(
+        (allowed) => String(allowed) === identifier,
+      );
     }
 
     return policy !== "allowlist";
@@ -414,7 +459,9 @@ export function isWhatsAppUserAllowed(params: {
 
   // Allowlist policy
   if (accountConfig.allowFrom?.length) {
-    return accountConfig.allowFrom.some((allowed) => String(allowed) === identifier);
+    return accountConfig.allowFrom.some(
+      (allowed) => String(allowed) === identifier,
+    );
   }
 
   return false;
@@ -479,7 +526,8 @@ export async function checkWhatsAppUserAccess(params: {
   groupConfig?: WhatsAppGroupRuntimeConfig;
   metadata?: Record<string, string>;
 }): Promise<WhatsAppAccessCheckResult> {
-  const { runtime, identifier, accountConfig, isGroup, groupConfig, metadata } = params;
+  const { runtime, identifier, accountConfig, isGroup, groupConfig, metadata } =
+    params;
 
   if (isGroup) {
     // Group access - same logic as synchronous version
@@ -494,13 +542,17 @@ export async function checkWhatsAppUserAccess(params: {
 
     // Check group-specific allowlist first
     if (groupConfig?.allowFrom?.length) {
-      const allowed = groupConfig.allowFrom.some((a) => String(a) === identifier);
+      const allowed = groupConfig.allowFrom.some(
+        (a) => String(a) === identifier,
+      );
       return { allowed };
     }
 
     // Check account-level group allowlist
     if (accountConfig.groupAllowFrom?.length) {
-      const allowed = accountConfig.groupAllowFrom.some((a) => String(a) === identifier);
+      const allowed = accountConfig.groupAllowFrom.some(
+        (a) => String(a) === identifier,
+      );
       return { allowed };
     }
 
@@ -535,13 +587,19 @@ export async function checkWhatsAppUserAccess(params: {
 
   // Allowlist policy - check static allowlist first
   if (accountConfig.allowFrom?.length) {
-    const allowed = accountConfig.allowFrom.some((a) => String(a) === identifier);
+    const allowed = accountConfig.allowFrom.some(
+      (a) => String(a) === identifier,
+    );
     if (allowed) {
       return { allowed: true };
     }
   }
 
   // Also check the dynamic pairing allowlist for the allowlist policy
-  const inDynamicAllowlist = await isInAllowlist(runtime, "whatsapp", identifier);
+  const inDynamicAllowlist = await isInAllowlist(
+    runtime,
+    "whatsapp",
+    identifier,
+  );
   return { allowed: inDynamicAllowlist };
 }

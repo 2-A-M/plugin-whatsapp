@@ -1,2 +1,2 @@
-export * from "./validators";
 export * from "./config-detector";
+export * from "./validators";

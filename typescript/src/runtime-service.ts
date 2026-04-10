@@ -1,15 +1,15 @@
 import {
   ChannelType,
-  createUniqueUuid,
   type Content,
+  createUniqueUuid,
   type IAgentRuntime,
   type Memory,
   Service,
   type UUID,
 } from "@elizaos/core";
-import { BaileysClient } from "./clients/baileys-client";
-import { WhatsAppClient } from "./client";
 import { checkWhatsAppUserAccess } from "./accounts";
+import { WhatsAppClient } from "./client";
+import { BaileysClient } from "./clients/baileys-client";
 import {
   chunkWhatsAppText,
   isWhatsAppGroupJid,
@@ -25,8 +25,6 @@ import type {
   WhatsAppMessageResponse,
   WhatsAppWebhookEvent,
 } from "./types";
-
-type Transport = "baileys" | "cloudapi";
 
 type RuntimeServiceConfig =
   | {
@@ -174,7 +172,10 @@ function extractWebhookText(message: WhatsAppIncomingMessage): string {
     return message.interactive.nfm_reply.body.trim();
   }
 
-  if (typeof message.image?.caption === "string" && message.image.caption.trim()) {
+  if (
+    typeof message.image?.caption === "string" &&
+    message.image.caption.trim()
+  ) {
     return message.image.caption.trim();
   }
 
@@ -215,7 +216,7 @@ export class WhatsAppConnectorService extends Service {
   public phoneNumber: string | null = null;
 
   private client: BaileysClient | WhatsAppClient | null = null;
-  private config: RuntimeServiceConfig | null = null;
+  config: RuntimeServiceConfig | null = null;
 
   constructor(runtime?: IAgentRuntime) {
     super(runtime);
@@ -224,7 +225,9 @@ export class WhatsAppConnectorService extends Service {
     }
   }
 
-  static async start(runtime: IAgentRuntime): Promise<WhatsAppConnectorService> {
+  static async start(
+    runtime: IAgentRuntime,
+  ): Promise<WhatsAppConnectorService> {
     const service = new WhatsAppConnectorService(runtime);
     await service.initialize();
     return service;
@@ -353,7 +356,8 @@ export class WhatsAppConnectorService extends Service {
   private async handleUnifiedMessage(message: UnifiedMessage): Promise<void> {
     const chatId = message.chatId ?? message.from;
     const senderId = message.senderId ?? message.from;
-    const text = typeof message.content === "string" ? message.content.trim() : "";
+    const text =
+      typeof message.content === "string" ? message.content.trim() : "";
 
     if (!chatId || !senderId || !text) {
       return;
@@ -377,7 +381,8 @@ export class WhatsAppConnectorService extends Service {
       return;
     }
 
-    const normalizedSender = normalizeWhatsAppTarget(message.from) ?? message.from;
+    const normalizedSender =
+      normalizeWhatsAppTarget(message.from) ?? message.from;
 
     await this.processIncomingMessage({
       chatId: normalizedSender,
@@ -555,7 +560,7 @@ export class WhatsAppConnectorService extends Service {
       to:
         this.config.transport === "baileys"
           ? chatId
-          : normalizeWhatsAppTarget(chatId) ?? chatId,
+          : (normalizeWhatsAppTarget(chatId) ?? chatId),
       content: text,
       replyToMessageId,
     });

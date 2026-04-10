@@ -1,4 +1,4 @@
-import { EventEmitter } from "node:events";
+import type { EventEmitter } from "node:events";
 import type { ConnectionStatus, WhatsAppMessage } from "../types";
 
 export interface IWhatsAppClient extends EventEmitter {

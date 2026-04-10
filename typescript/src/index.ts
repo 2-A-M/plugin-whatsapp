@@ -25,7 +25,8 @@ export class WhatsAppPlugin extends EventEmitter implements Plugin {
   constructor(config: WhatsAppConfig) {
     super();
     this.name = "WhatsApp Plugin";
-    this.description = "WhatsApp integration supporting Cloud API and Baileys (QR auth)";
+    this.description =
+      "WhatsApp integration supporting Cloud API and Baileys (QR auth)";
     this.client = ClientFactory.create(config);
     this.messageHandler = new MessageHandler(this.client);
     this.webhookHandler = new WebhookHandler();
@@ -52,7 +53,9 @@ export class WhatsAppPlugin extends EventEmitter implements Plugin {
     return this.client.getConnectionStatus();
   }
 
-  async sendMessage(message: WhatsAppMessage): Promise<WhatsAppMessageResponse> {
+  async sendMessage(
+    message: WhatsAppMessage,
+  ): Promise<WhatsAppMessageResponse> {
     return this.messageHandler.send(message);
   }
 
@@ -62,7 +65,9 @@ export class WhatsAppPlugin extends EventEmitter implements Plugin {
 
   async verifyWebhook(token: string): Promise<boolean> {
     if (!this.client.verifyWebhook) {
-      throw new Error("verifyWebhook is only supported by Cloud API authentication");
+      throw new Error(
+        "verifyWebhook is only supported by Cloud API authentication",
+      );
     }
     return this.client.verifyWebhook(token);
   }
@@ -99,7 +104,7 @@ export {
   type WhatsAppTokenResolution,
   type WhatsAppTokenSource,
 } from "./accounts";
-
+export { ClientFactory } from "./clients/factory";
 // Channel configuration types
 export type {
   WhatsAppAccountConfig,
@@ -108,7 +113,6 @@ export type {
   WhatsAppChannelConfig,
   WhatsAppGroupConfig,
 } from "./config";
-
 // Normalization and utility exports
 export {
   buildWhatsAppUserJid,
@@ -127,7 +131,5 @@ export {
   truncateText,
   WHATSAPP_TEXT_CHUNK_LIMIT,
 } from "./normalize";
-
-export { ClientFactory } from "./clients/factory";
 export { WhatsAppConnectorService } from "./runtime-service";
 export * from "./types";

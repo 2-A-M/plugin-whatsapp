@@ -1,5 +1,9 @@
 import { isValidWhatsAppNumber } from "../normalize";
-import type { WhatsAppConfig, WhatsAppMessage, WhatsAppTemplate } from "../types";
+import type {
+  WhatsAppConfig,
+  WhatsAppMessage,
+  WhatsAppTemplate,
+} from "../types";
 import { detectAuthMethod } from "./config-detector";
 
 export function validateConfig(config: WhatsAppConfig): void {
@@ -43,7 +47,7 @@ export function validateTemplate(template: WhatsAppTemplate): void {
     throw new Error("Template name is required");
   }
 
-  if (!template.language || !template.language.code) {
+  if (!template.language?.code) {
     throw new Error("Template language code is required");
   }
 }

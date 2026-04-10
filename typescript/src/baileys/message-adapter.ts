@@ -28,23 +28,34 @@ export class MessageAdapter {
       case "text":
         return { text: msg.content as string };
       case "image":
-        return this.mediaWithCaption("image", msg.content as WhatsAppMediaMessage);
+        return this.mediaWithCaption(
+          "image",
+          msg.content as WhatsAppMediaMessage,
+        );
       case "video":
-        return this.mediaWithCaption("video", msg.content as WhatsAppMediaMessage);
+        return this.mediaWithCaption(
+          "video",
+          msg.content as WhatsAppMediaMessage,
+        );
       case "audio":
-        return this.mediaNoCaption("audio", msg.content as WhatsAppMediaMessage);
+        return this.mediaNoCaption(
+          "audio",
+          msg.content as WhatsAppMediaMessage,
+        );
       case "document":
         return this.mediaWithFilename(msg.content as WhatsAppMediaMessage);
       case "template":
         return { text: this.renderTemplate(msg.content as WhatsAppTemplate) };
       default:
-        throw new Error(`Message type ${msg.type} is not yet supported for Baileys`);
+        throw new Error(
+          `Message type ${msg.type} is not yet supported for Baileys`,
+        );
     }
   }
 
   private mediaWithCaption(
     key: "image" | "video",
-    media: WhatsAppMediaMessage
+    media: WhatsAppMediaMessage,
   ): Record<string, unknown> {
     if (!media?.link) {
       throw new Error(`${key} message requires a media link`);
@@ -57,7 +68,7 @@ export class MessageAdapter {
 
   private mediaNoCaption(
     key: "audio",
-    media: WhatsAppMediaMessage
+    media: WhatsAppMediaMessage,
   ): Record<string, unknown> {
     if (!media?.link) {
       throw new Error(`${key} message requires a media link`);
@@ -65,7 +76,9 @@ export class MessageAdapter {
     return { [key]: { url: media.link } };
   }
 
-  private mediaWithFilename(media: WhatsAppMediaMessage): Record<string, unknown> {
+  private mediaWithFilename(
+    media: WhatsAppMediaMessage,
+  ): Record<string, unknown> {
     if (!media?.link) {
       throw new Error("document message requires a media link");
     }
@@ -77,7 +90,7 @@ export class MessageAdapter {
   }
 
   private detectType(
-    msg: proto.IWebMessageInfo
+    msg: proto.IWebMessageInfo,
   ): "text" | "image" | "audio" | "video" | "document" {
     if (msg.message?.conversation || msg.message?.extendedTextMessage) {
       return "text";
@@ -122,7 +135,7 @@ export class MessageAdapter {
 
   private renderTemplate(template: WhatsAppTemplate): string {
     const params = template.components?.flatMap((component) =>
-      component.parameters.map((parameter) => parameter.text).filter(Boolean)
+      component.parameters.map((parameter) => parameter.text).filter(Boolean),
     );
     return params && params.length > 0
       ? `${template.name}: ${params.join(", ")}`

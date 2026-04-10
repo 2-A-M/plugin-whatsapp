@@ -1,9 +1,12 @@
-import makeWASocket, { DisconnectReason, type WASocket } from "@whiskeysockets/baileys";
-import { Boom } from "@hapi/boom";
 import { EventEmitter } from "node:events";
+import type { Boom } from "@hapi/boom";
+import makeWASocket, {
+  DisconnectReason,
+  type WASocket,
+} from "@whiskeysockets/baileys";
 import pino from "pino";
-import type { BaileysAuthManager } from "./auth";
 import type { ConnectionStatus } from "../types";
+import type { BaileysAuthManager } from "./auth";
 
 export class BaileysConnection extends EventEmitter {
   private socket?: WASocket;
@@ -60,9 +63,11 @@ export class BaileysConnection extends EventEmitter {
         return;
       }
 
-      const statusCode = (lastDisconnect?.error as Boom | undefined)?.output?.statusCode;
+      const statusCode = (lastDisconnect?.error as Boom | undefined)?.output
+        ?.statusCode;
       const isQRTimeout = statusCode === 515;
-      const shouldReconnect = statusCode !== DisconnectReason.loggedOut && statusCode !== 405;
+      const shouldReconnect =
+        statusCode !== DisconnectReason.loggedOut && statusCode !== 405;
 
       if (lastDisconnect?.error && !isQRTimeout) {
         this.emit("error", lastDisconnect.error);
@@ -86,8 +91,8 @@ export class BaileysConnection extends EventEmitter {
         this.reconnectAttempts += 1;
         const baseDelayMs = isQRTimeout ? 1000 : 3000;
         const backoffMs = Math.min(
-          baseDelayMs * Math.pow(2, this.reconnectAttempts - 1),
-          30000
+          baseDelayMs * 2 ** (this.reconnectAttempts - 1),
+          30000,
         );
         await new Promise((resolve) => setTimeout(resolve, backoffMs));
         await this.connect();

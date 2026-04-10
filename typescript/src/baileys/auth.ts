@@ -1,5 +1,5 @@
-import { useMultiFileAuthState } from "@whiskeysockets/baileys";
 import type { AuthenticationState } from "@whiskeysockets/baileys";
+import { useMultiFileAuthState } from "@whiskeysockets/baileys";
 
 export class BaileysAuthManager {
   private readonly authDir: string;

@@ -5,22 +5,34 @@ import { sendMessageAction, WHATSAPP_SEND_MESSAGE_ACTION } from "./sendMessage";
 describe("sendMessageAction", () => {
   it("should have correct name and description", () => {
     expect(sendMessageAction.name).toBe(WHATSAPP_SEND_MESSAGE_ACTION);
-    expect(sendMessageAction.description).toBe("Send a text message via WhatsApp");
+    expect(sendMessageAction.description).toBe(
+      "Send a text message via WhatsApp",
+    );
   });
 
   it("should validate only for whatsapp source", async () => {
     const mockRuntime = {} as IAgentRuntime;
 
     const whatsappMessage = {
-      content: { source: "whatsapp", text: "send whatsapp message to +14155552671" },
+      content: {
+        source: "whatsapp",
+        text: "send whatsapp message to +14155552671",
+      },
     } as Memory;
 
     const telegramMessage = {
-      content: { source: "telegram", text: "send whatsapp message to +14155552671" },
+      content: {
+        source: "telegram",
+        text: "send whatsapp message to +14155552671",
+      },
     } as Memory;
 
-    expect(await sendMessageAction.validate(mockRuntime, whatsappMessage)).toBe(true);
-    expect(await sendMessageAction.validate(mockRuntime, telegramMessage)).toBe(false);
+    expect(await sendMessageAction.validate(mockRuntime, whatsappMessage)).toBe(
+      true,
+    );
+    expect(await sendMessageAction.validate(mockRuntime, telegramMessage)).toBe(
+      false,
+    );
   });
 
   it("should return error when whatsapp is not configured", async () => {
@@ -39,7 +51,7 @@ describe("sendMessageAction", () => {
       message,
       undefined,
       undefined,
-      callback
+      callback,
     );
 
     expect(result).toBeDefined();

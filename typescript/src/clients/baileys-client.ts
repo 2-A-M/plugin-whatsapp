@@ -3,8 +3,13 @@ import { BaileysAuthManager } from "../baileys/auth";
 import { BaileysConnection } from "../baileys/connection";
 import { MessageAdapter } from "../baileys/message-adapter";
 import { QRCodeGenerator } from "../baileys/qr-code";
+import type {
+  BaileysConfig,
+  ConnectionStatus,
+  WhatsAppMessage,
+  WhatsAppMessageResponse,
+} from "../types";
 import type { IWhatsAppClient } from "./interface";
-import type { BaileysConfig, ConnectionStatus, WhatsAppMessage, WhatsAppMessageResponse } from "../types";
 
 export class BaileysClient extends EventEmitter implements IWhatsAppClient {
   private readonly config: BaileysConfig;
@@ -46,9 +51,17 @@ export class BaileysClient extends EventEmitter implements IWhatsAppClient {
 
     this.connection.on("messages", (messages: unknown[]) => {
       for (const message of messages) {
-        const maybe = message as { key?: { fromMe?: boolean }; message?: unknown };
+        const maybe = message as {
+          key?: { fromMe?: boolean };
+          message?: unknown;
+        };
         if (!maybe.key?.fromMe && maybe.message) {
-          this.emit("message", this.adapter.toUnified(message as any));
+          this.emit(
+            "message",
+            this.adapter.toUnified(
+              message as Parameters<MessageAdapter["toUnified"]>[0],
+            ),
+          );
         }
       }
     });
@@ -66,14 +79,19 @@ export class BaileysClient extends EventEmitter implements IWhatsAppClient {
     await this.connection.disconnect();
   }
 
-  async sendMessage(message: WhatsAppMessage): Promise<WhatsAppMessageResponse> {
+  async sendMessage(
+    message: WhatsAppMessage,
+  ): Promise<WhatsAppMessageResponse> {
     const socket = this.connection.getSocket();
     if (!socket) {
       throw new Error("Not connected to WhatsApp via Baileys");
     }
 
     const payload = this.adapter.toBaileys(message);
-    const result = await socket.sendMessage(message.to, payload as any);
+    const result = await socket.sendMessage(
+      message.to,
+      payload as Parameters<typeof socket.sendMessage>[1],
+    );
     const id = result?.key?.id ?? "";
 
     return {

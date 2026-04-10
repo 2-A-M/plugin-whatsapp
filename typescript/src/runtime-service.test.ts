@@ -27,6 +27,14 @@ function createRuntimeMock(): IAgentRuntime {
   } as unknown as IAgentRuntime;
 }
 
+function getHandleMessageMock(runtime: IAgentRuntime) {
+  const messageService = runtime.messageService;
+  if (!messageService) {
+    throw new Error("Expected runtime.messageService mock to be present");
+  }
+  return vi.mocked(messageService.handleMessage);
+}
+
 describe("WhatsAppConnectorService", () => {
   it("routes webhook messages through messageService and returns whatsapp response memories", async () => {
     const runtime = createRuntimeMock();
@@ -39,10 +47,12 @@ describe("WhatsAppConnectorService", () => {
       },
     });
 
-    (service as unknown as {
-      config: Record<string, unknown>;
-      client: Record<string, unknown>;
-    }).config = {
+    (
+      service as unknown as {
+        config: Record<string, unknown>;
+        client: Record<string, unknown>;
+      }
+    ).config = {
       transport: "cloudapi",
       accessToken: "test-token",
       phoneNumberId: "1234567890",
@@ -56,7 +66,7 @@ describe("WhatsAppConnectorService", () => {
     let inboundMemory: Memory | null = null;
     let outboundMemories: Memory[] = [];
 
-    vi.mocked(runtime.messageService!.handleMessage).mockImplementation(
+    getHandleMessageMock(runtime).mockImplementation(
       async (
         _runtime: IAgentRuntime,
         message: Memory,
@@ -111,7 +121,7 @@ describe("WhatsAppConnectorService", () => {
     await service.handleWebhook(event);
 
     expect(runtime.ensureConnection).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(runtime.messageService!.handleMessage)).toHaveBeenCalledTimes(1);
+    expect(getHandleMessageMock(runtime)).toHaveBeenCalledTimes(1);
     expect(inboundMemory?.content.source).toBe("whatsapp");
     expect(inboundMemory?.content.channelType).toBe(ChannelType.DM);
     expect(inboundMemory?.content.text).toBe("hello from whatsapp");
@@ -133,10 +143,12 @@ describe("WhatsAppConnectorService", () => {
     const runtime = createRuntimeMock();
     const service = new WhatsAppConnectorService(runtime);
 
-    (service as unknown as {
-      config: Record<string, unknown>;
-      client: Record<string, unknown>;
-    }).config = {
+    (
+      service as unknown as {
+        config: Record<string, unknown>;
+        client: Record<string, unknown>;
+      }
+    ).config = {
       transport: "baileys",
       authDir: "/tmp/whatsapp-auth",
       groupPolicy: "open",
@@ -152,7 +164,7 @@ describe("WhatsAppConnectorService", () => {
     };
 
     let inboundMemory: Memory | null = null;
-    vi.mocked(runtime.messageService!.handleMessage).mockImplementation(
+    getHandleMessageMock(runtime).mockImplementation(
       async (
         _runtime: IAgentRuntime,
         message: Memory,
@@ -170,17 +182,19 @@ describe("WhatsAppConnectorService", () => {
       },
     );
 
-    await (service as unknown as {
-      handleUnifiedMessage(message: {
-        id: string;
-        from: string;
-        chatId: string;
-        senderId: string;
-        timestamp: number;
-        type: "text";
-        content: string;
-      }): Promise<void>;
-    }).handleUnifiedMessage({
+    await (
+      service as unknown as {
+        handleUnifiedMessage(message: {
+          id: string;
+          from: string;
+          chatId: string;
+          senderId: string;
+          timestamp: number;
+          type: "text";
+          content: string;
+        }): Promise<void>;
+      }
+    ).handleUnifiedMessage({
       id: "baileys-in-1",
       from: "12345@g.us",
       chatId: "12345@g.us",
@@ -205,10 +219,12 @@ describe("WhatsAppConnectorService", () => {
     const runtime = createRuntimeMock();
     const service = new WhatsAppConnectorService(runtime);
 
-    (service as unknown as {
-      config: Record<string, unknown>;
-      client: Record<string, unknown>;
-    }).config = {
+    (
+      service as unknown as {
+        config: Record<string, unknown>;
+        client: Record<string, unknown>;
+      }
+    ).config = {
       transport: "cloudapi",
       accessToken: "test-token",
       phoneNumberId: "1234567890",
@@ -251,7 +267,7 @@ describe("WhatsAppConnectorService", () => {
     await service.handleWebhook(event);
 
     expect(runtime.ensureConnection).not.toHaveBeenCalled();
-    expect(vi.mocked(runtime.messageService!.handleMessage)).not.toHaveBeenCalled();
+    expect(getHandleMessageMock(runtime)).not.toHaveBeenCalled();
   });
 
   it("blocks inbound DMs when the policy is disabled", async () => {
@@ -259,10 +275,12 @@ describe("WhatsAppConnectorService", () => {
     const service = new WhatsAppConnectorService(runtime);
     const sendMessage = vi.fn();
 
-    (service as unknown as {
-      config: Record<string, unknown>;
-      client: Record<string, unknown>;
-    }).config = {
+    (
+      service as unknown as {
+        config: Record<string, unknown>;
+        client: Record<string, unknown>;
+      }
+    ).config = {
       transport: "cloudapi",
       accessToken: "test-token",
       phoneNumberId: "1234567890",
@@ -307,7 +325,7 @@ describe("WhatsAppConnectorService", () => {
     });
 
     expect(runtime.ensureConnection).not.toHaveBeenCalled();
-    expect(vi.mocked(runtime.messageService!.handleMessage)).not.toHaveBeenCalled();
+    expect(getHandleMessageMock(runtime)).not.toHaveBeenCalled();
     expect(sendMessage).not.toHaveBeenCalled();
   });
 
@@ -331,10 +349,12 @@ describe("WhatsAppConnectorService", () => {
         },
       });
 
-    (service as unknown as {
-      config: Record<string, unknown>;
-      client: Record<string, unknown>;
-    }).config = {
+    (
+      service as unknown as {
+        config: Record<string, unknown>;
+        client: Record<string, unknown>;
+      }
+    ).config = {
       transport: "cloudapi",
       accessToken: "test-token",
       phoneNumberId: "1234567890",
@@ -348,7 +368,7 @@ describe("WhatsAppConnectorService", () => {
     const longReply = `${"a".repeat(WHATSAPP_TEXT_CHUNK_LIMIT)} ${"b".repeat(32)}`;
     let outboundMemories: Memory[] = [];
 
-    vi.mocked(runtime.messageService!.handleMessage).mockImplementation(
+    getHandleMessageMock(runtime).mockImplementation(
       async (
         _runtime: IAgentRuntime,
         _message: Memory,

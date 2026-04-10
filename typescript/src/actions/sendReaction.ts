@@ -8,7 +8,11 @@ import type {
   Memory,
   State,
 } from "@elizaos/core";
-import { composePromptFromState, ModelType, parseJSONObjectFromText } from "@elizaos/core";
+import {
+  composePromptFromState,
+  ModelType,
+  parseJSONObjectFromText,
+} from "@elizaos/core";
 
 export const WHATSAPP_SEND_REACTION_ACTION = "WHATSAPP_SEND_REACTION";
 
@@ -40,52 +44,34 @@ export const sendReactionAction: Action = {
   similes: ["WHATSAPP_REACT", "REACT_WHATSAPP", "WHATSAPP_EMOJI"],
   description: "Send a reaction emoji to a WhatsApp message",
 
-        validate: async (runtime: any, message: any, state?: any, options?: any): Promise<boolean> => {
-    	const __avTextRaw = typeof message?.content?.text === 'string' ? message.content.text : '';
-    	const __avText = __avTextRaw.toLowerCase();
-    	const __avKeywords = ['whatsapp', 'send', 'reaction'];
-    	const __avKeywordOk =
-    		__avKeywords.length > 0 &&
-    		__avKeywords.some((kw) => kw.length > 0 && __avText.includes(kw));
-    	const __avRegex = new RegExp('\\b(?:whatsapp|send|reaction)\\b', 'i');
-    	const __avRegexOk = __avRegex.test(__avText);
-    	const __avSource = String(message?.content?.source ?? message?.source ?? '');
-    	const __avExpectedSource = 'whatsapp';
-    	const __avSourceOk = __avExpectedSource
-    		? __avSource === __avExpectedSource
-    		: Boolean(__avSource || state || runtime?.agentId || runtime?.getService);
-    	const __avOptions = options && typeof options === 'object' ? options : {};
-    	const __avInputOk =
-    		__avText.trim().length > 0 ||
-    		Object.keys(__avOptions as Record<string, unknown>).length > 0 ||
-    		Boolean(message?.content && typeof message.content === 'object');
-
-    	if (!(__avKeywordOk && __avRegexOk && __avSourceOk && __avInputOk)) {
-    		return false;
-    	}
-
-    	const __avLegacyValidate = async (_runtime: IAgentRuntime, message: Memory): Promise<boolean> => {
-    const source = message.content?.source;
-    return source === "whatsapp";
-  };
-    	try {
-    		return Boolean(await (__avLegacyValidate as any)(runtime, message, state, options));
-    	} catch {
-    		return false;
-    	}
-    },
+  validate: async (
+    _runtime: IAgentRuntime,
+    message: Memory,
+    _state?: State,
+    _options?: HandlerOptions,
+  ): Promise<boolean> => {
+    const text = message.content?.text?.toLowerCase() ?? "";
+    const hasIntent =
+      ["whatsapp", "send", "reaction"].some((keyword) =>
+        text.includes(keyword),
+      ) && /\b(?:whatsapp|send|reaction)\b/i.test(text);
+    return hasIntent && message.content?.source === "whatsapp";
+  },
 
   handler: async (
     runtime: IAgentRuntime,
     message: Memory,
     state: State | undefined,
     _options?: HandlerOptions,
-    callback?: HandlerCallback
+    callback?: HandlerCallback,
   ): Promise<ActionResult> => {
     // Get WhatsApp settings
     const accessToken = runtime.getSetting("WHATSAPP_ACCESS_TOKEN") as string;
-    const phoneNumberId = runtime.getSetting("WHATSAPP_PHONE_NUMBER_ID") as string;
-    const apiVersion = (runtime.getSetting("WHATSAPP_API_VERSION") as string) || "v24.0";
+    const phoneNumberId = runtime.getSetting(
+      "WHATSAPP_PHONE_NUMBER_ID",
+    ) as string;
+    const apiVersion =
+      (runtime.getSetting("WHATSAPP_API_VERSION") as string) || "v24.0";
 
     if (!accessToken || !phoneNumberId) {
       if (callback) {
@@ -110,8 +96,10 @@ export const sendReactionAction: Action = {
         prompt,
       });
 
-      const parsed = parseJSONObjectFromText(response) as unknown as ReactionParams | null;
-      if (!parsed || !parsed.messageId || !parsed.emoji) {
+      const parsed = parseJSONObjectFromText(
+        response,
+      ) as unknown as ReactionParams | null;
+      if (!parsed?.messageId || !parsed.emoji) {
         // Try to use context from message
         const messageId = message.content?.messageId as string;
         if (!messageId) {
@@ -189,7 +177,8 @@ export const sendReactionAction: Action = {
         },
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       if (callback) {
         await callback({
           text: `Failed to send reaction: ${errorMessage}`,

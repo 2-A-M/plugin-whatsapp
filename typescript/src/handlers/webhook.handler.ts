@@ -1,4 +1,8 @@
-import type { WhatsAppIncomingMessage, WhatsAppStatusUpdate, WhatsAppWebhookEvent } from "../types";
+import type {
+  WhatsAppIncomingMessage,
+  WhatsAppStatusUpdate,
+  WhatsAppWebhookEvent,
+} from "../types";
 
 export class WebhookHandler {
   async handle(event: WhatsAppWebhookEvent): Promise<void> {
