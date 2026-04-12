@@ -7,7 +7,7 @@ describe("detectAuthMethod", () => {
       detectAuthMethod({
         accessToken: "token",
         phoneNumberId: "123",
-      }),
+      })
     ).toBe("cloudapi");
   });
 
@@ -15,7 +15,7 @@ describe("detectAuthMethod", () => {
     expect(
       detectAuthMethod({
         authDir: "./auth",
-      }),
+      })
     ).toBe("baileys");
   });
 
@@ -25,7 +25,7 @@ describe("detectAuthMethod", () => {
         authMethod: "invalid" as never,
         accessToken: "token",
         phoneNumberId: "123",
-      }),
+      })
     ).toThrow('Invalid authMethod: "invalid"');
   });
 });

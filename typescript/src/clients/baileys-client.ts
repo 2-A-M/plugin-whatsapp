@@ -58,9 +58,7 @@ export class BaileysClient extends EventEmitter implements IWhatsAppClient {
         if (!maybe.key?.fromMe && maybe.message) {
           this.emit(
             "message",
-            this.adapter.toUnified(
-              message as Parameters<MessageAdapter["toUnified"]>[0],
-            ),
+            this.adapter.toUnified(message as Parameters<MessageAdapter["toUnified"]>[0])
           );
         }
       }
@@ -79,9 +77,7 @@ export class BaileysClient extends EventEmitter implements IWhatsAppClient {
     await this.connection.disconnect();
   }
 
-  async sendMessage(
-    message: WhatsAppMessage,
-  ): Promise<WhatsAppMessageResponse> {
+  async sendMessage(message: WhatsAppMessage): Promise<WhatsAppMessageResponse> {
     const socket = this.connection.getSocket();
     if (!socket) {
       throw new Error("Not connected to WhatsApp via Baileys");
@@ -90,7 +86,7 @@ export class BaileysClient extends EventEmitter implements IWhatsAppClient {
     const payload = this.adapter.toBaileys(message);
     const result = await socket.sendMessage(
       message.to,
-      payload as Parameters<typeof socket.sendMessage>[1],
+      payload as Parameters<typeof socket.sendMessage>[1]
     );
     const id = result?.key?.id ?? "";
 

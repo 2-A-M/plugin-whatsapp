@@ -45,9 +45,7 @@ export class WhatsAppService {
       throw new Error("WHATSAPP_ACCESS_TOKEN environment variable is required");
     }
     if (!phoneNumberId) {
-      throw new Error(
-        "WHATSAPP_PHONE_NUMBER_ID environment variable is required",
-      );
+      throw new Error("WHATSAPP_PHONE_NUMBER_ID environment variable is required");
     }
 
     return new WhatsAppService({
@@ -76,9 +74,7 @@ export class WhatsAppService {
     }
 
     this.running = true;
-    console.log(
-      `WhatsApp service started for phone number ID: ${this.config.phoneNumberId}`,
-    );
+    console.log(`WhatsApp service started for phone number ID: ${this.config.phoneNumberId}`);
   }
 
   /**
@@ -153,9 +149,7 @@ export class WhatsAppService {
   /**
    * Send a message of any type.
    */
-  async sendMessage(
-    message: WhatsAppMessage,
-  ): Promise<WhatsAppMessageResponse> {
+  async sendMessage(message: WhatsAppMessage): Promise<WhatsAppMessageResponse> {
     return this.messageHandler.send(message);
   }
 
@@ -177,10 +171,7 @@ export class WhatsAppService {
   /**
    * Remove a reaction from a message.
    */
-  async removeReaction(
-    to: string,
-    messageId: string,
-  ): Promise<SendReactionResult> {
+  async removeReaction(to: string, messageId: string): Promise<SendReactionResult> {
     return this.client.removeReaction(to, messageId);
   }
 
@@ -190,7 +181,7 @@ export class WhatsAppService {
   async sendImage(
     to: string,
     imageUrl: string,
-    caption?: string,
+    caption?: string
   ): Promise<WhatsAppMessageResponse> {
     const response = await this.client.sendImage(to, imageUrl, caption);
     return response.data;
@@ -202,7 +193,7 @@ export class WhatsAppService {
   async sendVideo(
     to: string,
     videoUrl: string,
-    caption?: string,
+    caption?: string
   ): Promise<WhatsAppMessageResponse> {
     const response = await this.client.sendVideo(to, videoUrl, caption);
     return response.data;
@@ -211,10 +202,7 @@ export class WhatsAppService {
   /**
    * Send an audio message.
    */
-  async sendAudio(
-    to: string,
-    audioUrl: string,
-  ): Promise<WhatsAppMessageResponse> {
+  async sendAudio(to: string, audioUrl: string): Promise<WhatsAppMessageResponse> {
     const response = await this.client.sendAudio(to, audioUrl);
     return response.data;
   }
@@ -226,14 +214,9 @@ export class WhatsAppService {
     to: string,
     documentUrl: string,
     filename?: string,
-    caption?: string,
+    caption?: string
   ): Promise<WhatsAppMessageResponse> {
-    const response = await this.client.sendDocument(
-      to,
-      documentUrl,
-      filename,
-      caption,
-    );
+    const response = await this.client.sendDocument(to, documentUrl, filename, caption);
     return response.data;
   }
 
@@ -245,15 +228,9 @@ export class WhatsAppService {
     latitude: number,
     longitude: number,
     name?: string,
-    address?: string,
+    address?: string
   ): Promise<WhatsAppMessageResponse> {
-    const response = await this.client.sendLocation(
-      to,
-      latitude,
-      longitude,
-      name,
-      address,
-    );
+    const response = await this.client.sendLocation(to, latitude, longitude, name, address);
     return response.data;
   }
 
@@ -265,14 +242,14 @@ export class WhatsAppService {
     bodyText: string,
     buttons: Array<{ id: string; title: string }>,
     headerText?: string,
-    footerText?: string,
+    footerText?: string
   ): Promise<WhatsAppMessageResponse> {
     const response = await this.client.sendButtonMessage(
       to,
       bodyText,
       buttons,
       headerText,
-      footerText,
+      footerText
     );
     return response.data;
   }
@@ -289,7 +266,7 @@ export class WhatsAppService {
       rows: Array<{ id: string; title: string; description?: string }>;
     }>,
     headerText?: string,
-    footerText?: string,
+    footerText?: string
   ): Promise<WhatsAppMessageResponse> {
     const response = await this.client.sendListMessage(
       to,
@@ -297,7 +274,7 @@ export class WhatsAppService {
       buttonText,
       sections,
       headerText,
-      footerText,
+      footerText
     );
     return response.data;
   }

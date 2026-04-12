@@ -94,12 +94,7 @@ export interface WhatsAppLocationMessage {
 /**
  * Interactive message types.
  */
-export type InteractiveMessageType =
-  | "button"
-  | "list"
-  | "product"
-  | "product_list"
-  | "flow";
+export type InteractiveMessageType = "button" | "list" | "product" | "product_list" | "flow";
 
 /**
  * Interactive message content.
@@ -403,5 +398,4 @@ export const WHATSAPP_REACTIONS = {
   CELEBRATION: "🎉",
 } as const;
 
-export type WhatsAppReactionEmoji =
-  (typeof WHATSAPP_REACTIONS)[keyof typeof WHATSAPP_REACTIONS];
+export type WhatsAppReactionEmoji = (typeof WHATSAPP_REACTIONS)[keyof typeof WHATSAPP_REACTIONS];

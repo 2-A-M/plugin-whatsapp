@@ -8,11 +8,7 @@ import type {
   Memory,
   State,
 } from "@elizaos/core";
-import {
-  composePromptFromState,
-  ModelType,
-  parseJSONObjectFromText,
-} from "@elizaos/core";
+import { composePromptFromState, ModelType, parseJSONObjectFromText } from "@elizaos/core";
 
 export const WHATSAPP_SEND_MESSAGE_ACTION = "WHATSAPP_SEND_MESSAGE";
 
@@ -41,25 +37,19 @@ interface SendMessageParams {
 
 export const sendMessageAction: Action = {
   name: WHATSAPP_SEND_MESSAGE_ACTION,
-  similes: [
-    "SEND_WHATSAPP",
-    "WHATSAPP_MESSAGE",
-    "TEXT_WHATSAPP",
-    "SEND_WHATSAPP_MESSAGE",
-  ],
+  similes: ["SEND_WHATSAPP", "WHATSAPP_MESSAGE", "TEXT_WHATSAPP", "SEND_WHATSAPP_MESSAGE"],
   description: "Send a text message via WhatsApp",
 
   validate: async (
     _runtime: IAgentRuntime,
     message: Memory,
     _state?: State,
-    _options?: HandlerOptions,
+    _options?: HandlerOptions
   ): Promise<boolean> => {
     const text = message.content?.text?.toLowerCase() ?? "";
     const hasIntent =
-      ["whatsapp", "send", "message"].some((keyword) =>
-        text.includes(keyword),
-      ) && /\b(?:whatsapp|send|message)\b/i.test(text);
+      ["whatsapp", "send", "message"].some((keyword) => text.includes(keyword)) &&
+      /\b(?:whatsapp|send|message)\b/i.test(text);
     return hasIntent && message.content?.source === "whatsapp";
   },
 
@@ -68,15 +58,12 @@ export const sendMessageAction: Action = {
     message: Memory,
     state: State | undefined,
     _options?: HandlerOptions,
-    callback?: HandlerCallback,
+    callback?: HandlerCallback
   ): Promise<ActionResult> => {
     // Get WhatsApp settings
     const accessToken = runtime.getSetting("WHATSAPP_ACCESS_TOKEN") as string;
-    const phoneNumberId = runtime.getSetting(
-      "WHATSAPP_PHONE_NUMBER_ID",
-    ) as string;
-    const apiVersion =
-      (runtime.getSetting("WHATSAPP_API_VERSION") as string) || "v24.0";
+    const phoneNumberId = runtime.getSetting("WHATSAPP_PHONE_NUMBER_ID") as string;
+    const apiVersion = (runtime.getSetting("WHATSAPP_API_VERSION") as string) || "v24.0";
 
     if (!accessToken || !phoneNumberId) {
       if (callback) {
@@ -101,9 +88,7 @@ export const sendMessageAction: Action = {
         prompt,
       });
 
-      const parsed = parseJSONObjectFromText(
-        response,
-      ) as unknown as SendMessageParams | null;
+      const parsed = parseJSONObjectFromText(response) as unknown as SendMessageParams | null;
       if (!parsed?.to || !parsed.text) {
         // Try to use context from message
         const to = message.content?.from as string;
@@ -198,8 +183,7 @@ export const sendMessageAction: Action = {
         },
       };
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       if (callback) {
         await callback({
           text: `Failed to send WhatsApp message: ${errorMessage}`,

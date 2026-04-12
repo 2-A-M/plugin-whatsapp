@@ -1,9 +1,5 @@
 import { isValidWhatsAppNumber } from "../normalize";
-import type {
-  WhatsAppConfig,
-  WhatsAppMessage,
-  WhatsAppTemplate,
-} from "../types";
+import type { WhatsAppConfig, WhatsAppMessage, WhatsAppTemplate } from "../types";
 import { detectAuthMethod } from "./config-detector";
 
 export function validateConfig(config: WhatsAppConfig): void {

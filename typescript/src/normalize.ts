@@ -79,9 +79,7 @@ export function isWhatsAppGroupJid(value: string): boolean {
  */
 export function isWhatsAppUserTarget(value: string): boolean {
   const candidate = stripWhatsAppTargetPrefixes(value);
-  return (
-    WHATSAPP_USER_JID_RE.test(candidate) || WHATSAPP_LID_RE.test(candidate)
-  );
+  return WHATSAPP_USER_JID_RE.test(candidate) || WHATSAPP_LID_RE.test(candidate);
 }
 
 /**
@@ -182,10 +180,7 @@ export interface ChunkWhatsAppTextOpts {
 /**
  * Splits text at the last safe break point within the limit
  */
-function splitAtBreakPoint(
-  text: string,
-  limit: number,
-): { chunk: string; remainder: string } {
+function splitAtBreakPoint(text: string, limit: number): { chunk: string; remainder: string } {
   if (text.length <= limit) {
     return { chunk: text, remainder: "" };
   }
@@ -214,7 +209,7 @@ function splitAtBreakPoint(
   const sentenceEnd = Math.max(
     searchArea.lastIndexOf(". "),
     searchArea.lastIndexOf("! "),
-    searchArea.lastIndexOf("? "),
+    searchArea.lastIndexOf("? ")
   );
   if (sentenceEnd > limit * 0.5) {
     return {
@@ -242,10 +237,7 @@ function splitAtBreakPoint(
 /**
  * Chunks text for WhatsApp messages
  */
-export function chunkWhatsAppText(
-  text: string,
-  opts: ChunkWhatsAppTextOpts = {},
-): string[] {
+export function chunkWhatsAppText(text: string, opts: ChunkWhatsAppTextOpts = {}): string[] {
   const limit = opts.limit ?? WHATSAPP_TEXT_CHUNK_LIMIT;
 
   if (!text?.trim()) {

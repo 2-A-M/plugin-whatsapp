@@ -47,10 +47,7 @@ type RuntimeServiceConfig =
       groupAllowFrom?: string[];
     };
 
-function readStringSetting(
-  runtime: IAgentRuntime,
-  key: string,
-): string | undefined {
+function readStringSetting(runtime: IAgentRuntime, key: string): string | undefined {
   const value = runtime.getSetting(key);
   if (typeof value === "string" && value.trim().length > 0) {
     return value.trim();
@@ -76,9 +73,7 @@ function readCsvSetting(runtime: IAgentRuntime, key: string): string[] {
     .filter((entry) => entry.length > 0);
 }
 
-function resolveRuntimeConfig(
-  runtime: IAgentRuntime,
-): RuntimeServiceConfig | null {
+function resolveRuntimeConfig(runtime: IAgentRuntime): RuntimeServiceConfig | null {
   const dmPolicy = readStringSetting(runtime, "WHATSAPP_DM_POLICY") as
     | "open"
     | "allowlist"
@@ -114,10 +109,7 @@ function resolveRuntimeConfig(
       transport: "cloudapi",
       accessToken,
       phoneNumberId,
-      webhookVerifyToken: readStringSetting(
-        runtime,
-        "WHATSAPP_WEBHOOK_VERIFY_TOKEN",
-      ),
+      webhookVerifyToken: readStringSetting(runtime, "WHATSAPP_WEBHOOK_VERIFY_TOKEN"),
       apiVersion: readStringSetting(runtime, "WHATSAPP_API_VERSION"),
       dmPolicy,
       groupPolicy,
@@ -138,11 +130,7 @@ function toTimestampMs(value: number | string | undefined): number {
   return parsed >= 1_000_000_000_000 ? parsed : parsed * 1000;
 }
 
-function toMemoryId(
-  runtime: IAgentRuntime,
-  chatId: string,
-  messageId: string,
-): UUID {
+function toMemoryId(runtime: IAgentRuntime, chatId: string, messageId: string): UUID {
   return createUniqueUuid(runtime, `whatsapp:${chatId}:${messageId}`) as UUID;
 }
 
@@ -172,24 +160,15 @@ function extractWebhookText(message: WhatsAppIncomingMessage): string {
     return message.interactive.nfm_reply.body.trim();
   }
 
-  if (
-    typeof message.image?.caption === "string" &&
-    message.image.caption.trim()
-  ) {
+  if (typeof message.image?.caption === "string" && message.image.caption.trim()) {
     return message.image.caption.trim();
   }
 
-  if (
-    typeof message.video?.caption === "string" &&
-    message.video.caption.trim()
-  ) {
+  if (typeof message.video?.caption === "string" && message.video.caption.trim()) {
     return message.video.caption.trim();
   }
 
-  if (
-    typeof message.document?.caption === "string" &&
-    message.document.caption.trim()
-  ) {
+  if (typeof message.document?.caption === "string" && message.document.caption.trim()) {
     return message.document.caption.trim();
   }
 
@@ -209,8 +188,7 @@ export class WhatsAppConnectorService extends Service {
   static serviceType = "whatsapp";
   protected declare runtime: IAgentRuntime;
 
-  capabilityDescription =
-    "The agent is able to send and receive messages on whatsapp";
+  capabilityDescription = "The agent is able to send and receive messages on whatsapp";
 
   public connected = false;
   public phoneNumber: string | null = null;
@@ -225,9 +203,7 @@ export class WhatsAppConnectorService extends Service {
     }
   }
 
-  static async start(
-    runtime: IAgentRuntime,
-  ): Promise<WhatsAppConnectorService> {
+  static async start(runtime: IAgentRuntime): Promise<WhatsAppConnectorService> {
     const service = new WhatsAppConnectorService(runtime);
     await service.initialize();
     return service;
@@ -238,7 +214,7 @@ export class WhatsAppConnectorService extends Service {
     if (!this.config) {
       this.runtime.logger.warn(
         { src: "plugin:whatsapp", agentId: this.runtime.agentId },
-        "WhatsApp connector is not configured",
+        "WhatsApp connector is not configured"
       );
       return;
     }
@@ -294,12 +270,7 @@ export class WhatsAppConnectorService extends Service {
         ? this.config.webhookVerifyToken
         : readStringSetting(this.runtime, "WHATSAPP_WEBHOOK_VERIFY_TOKEN");
 
-    if (
-      mode === "subscribe" &&
-      expectedToken &&
-      token === expectedToken &&
-      challenge
-    ) {
+    if (mode === "subscribe" && expectedToken && token === expectedToken && challenge) {
       return challenge;
     }
 
@@ -311,8 +282,7 @@ export class WhatsAppConnectorService extends Service {
       this.connected = status === "open";
       if (status === "open" && client instanceof BaileysClient) {
         const nextPhone = client.getPhoneNumber();
-        this.phoneNumber =
-          (nextPhone && normalizeWhatsAppTarget(nextPhone)) ?? nextPhone;
+        this.phoneNumber = (nextPhone && normalizeWhatsAppTarget(nextPhone)) ?? nextPhone;
       }
       if (status === "close") {
         this.phoneNumber = null;
@@ -323,8 +293,7 @@ export class WhatsAppConnectorService extends Service {
       this.connected = true;
       if (client instanceof BaileysClient) {
         const nextPhone = client.getPhoneNumber();
-        this.phoneNumber =
-          (nextPhone && normalizeWhatsAppTarget(nextPhone)) ?? nextPhone;
+        this.phoneNumber = (nextPhone && normalizeWhatsAppTarget(nextPhone)) ?? nextPhone;
       }
     });
 
@@ -336,7 +305,7 @@ export class WhatsAppConnectorService extends Service {
             agentId: this.runtime.agentId,
             error: error instanceof Error ? error.message : String(error),
           },
-          "Failed to process inbound WhatsApp message",
+          "Failed to process inbound WhatsApp message"
         );
       });
     });
@@ -348,7 +317,7 @@ export class WhatsAppConnectorService extends Service {
           agentId: this.runtime.agentId,
           error: error instanceof Error ? error.message : String(error),
         },
-        "WhatsApp client error",
+        "WhatsApp client error"
       );
     });
   }
@@ -356,8 +325,7 @@ export class WhatsAppConnectorService extends Service {
   private async handleUnifiedMessage(message: UnifiedMessage): Promise<void> {
     const chatId = message.chatId ?? message.from;
     const senderId = message.senderId ?? message.from;
-    const text =
-      typeof message.content === "string" ? message.content.trim() : "";
+    const text = typeof message.content === "string" ? message.content.trim() : "";
 
     if (!chatId || !senderId || !text) {
       return;
@@ -373,16 +341,13 @@ export class WhatsAppConnectorService extends Service {
     });
   }
 
-  private async handleIncomingWebhookMessage(
-    message: WhatsAppIncomingMessage,
-  ): Promise<void> {
+  private async handleIncomingWebhookMessage(message: WhatsAppIncomingMessage): Promise<void> {
     const text = extractWebhookText(message);
     if (!text) {
       return;
     }
 
-    const normalizedSender =
-      normalizeWhatsAppTarget(message.from) ?? message.from;
+    const normalizedSender = normalizeWhatsAppTarget(message.from) ?? message.from;
 
     await this.processIncomingMessage({
       chatId: normalizedSender,
@@ -407,8 +372,7 @@ export class WhatsAppConnectorService extends Service {
     }
 
     const isGroup = isWhatsAppGroupJid(params.chatId);
-    const normalizedSender =
-      normalizeWhatsAppTarget(params.senderId) ?? params.senderId;
+    const normalizedSender = normalizeWhatsAppTarget(params.senderId) ?? params.senderId;
 
     const accountConfig = {
       dmPolicy: this.config?.dmPolicy,
@@ -434,23 +398,10 @@ export class WhatsAppConnectorService extends Service {
     }
 
     const channelType = isGroup ? ChannelType.GROUP : ChannelType.DM;
-    const roomId = createUniqueUuid(
-      this.runtime,
-      `whatsapp-room:${params.chatId}`,
-    ) as UUID;
-    const worldId = createUniqueUuid(
-      this.runtime,
-      `whatsapp-world:${params.chatId}`,
-    ) as UUID;
-    const entityId = createUniqueUuid(
-      this.runtime,
-      `whatsapp-entity:${normalizedSender}`,
-    ) as UUID;
-    const inboundMemoryId = toMemoryId(
-      this.runtime,
-      params.chatId,
-      params.externalMessageId,
-    );
+    const roomId = createUniqueUuid(this.runtime, `whatsapp-room:${params.chatId}`) as UUID;
+    const worldId = createUniqueUuid(this.runtime, `whatsapp-world:${params.chatId}`) as UUID;
+    const entityId = createUniqueUuid(this.runtime, `whatsapp-entity:${normalizedSender}`) as UUID;
+    const inboundMemoryId = toMemoryId(this.runtime, params.chatId, params.externalMessageId);
 
     await this.runtime.ensureConnection({
       entityId,
@@ -480,11 +431,7 @@ export class WhatsAppConnectorService extends Service {
         messageId: params.externalMessageId,
         ...(params.replyToExternalMessageId
           ? {
-              inReplyTo: toMemoryId(
-                this.runtime,
-                params.chatId,
-                params.replyToExternalMessageId,
-              ),
+              inReplyTo: toMemoryId(this.runtime, params.chatId, params.replyToExternalMessageId),
             }
           : {}),
       },
@@ -506,11 +453,7 @@ export class WhatsAppConnectorService extends Service {
       const responseMemories: Memory[] = [];
 
       for (const [index, chunk] of chunks.entries()) {
-        const response = await this.sendTextMessage(
-          params.chatId,
-          chunk,
-          params.externalMessageId,
-        );
+        const response = await this.sendTextMessage(params.chatId, chunk, params.externalMessageId);
         const externalResponseId =
           response.messages?.[0]?.id ??
           `${params.externalMessageId}:response:${index}:${Date.now()}`;
@@ -539,17 +482,13 @@ export class WhatsAppConnectorService extends Service {
       return responseMemories;
     };
 
-    await this.runtime.messageService.handleMessage(
-      this.runtime,
-      inboundMemory,
-      callback,
-    );
+    await this.runtime.messageService.handleMessage(this.runtime, inboundMemory, callback);
   }
 
   private async sendTextMessage(
     chatId: string,
     text: string,
-    replyToMessageId?: string,
+    replyToMessageId?: string
   ): Promise<WhatsAppMessageResponse> {
     if (!this.client || !this.config) {
       throw new Error("WhatsApp client is not initialized");
@@ -558,9 +497,7 @@ export class WhatsAppConnectorService extends Service {
     const response = await this.client.sendMessage({
       type: "text",
       to:
-        this.config.transport === "baileys"
-          ? chatId
-          : (normalizeWhatsAppTarget(chatId) ?? chatId),
+        this.config.transport === "baileys" ? chatId : (normalizeWhatsAppTarget(chatId) ?? chatId),
       content: text,
       replyToMessageId,
     });

@@ -29,14 +29,14 @@
     "test:ts": "cd typescript && vitest run || echo 'TypeScript tests skipped - no tests found'",
     "test:rust": "test -d rust && cd rust && cargo test || echo 'Rust tests skipped'",
     "test:python": "test -d python && cd python && PYTHONPATH=. pytest -p no:anchorpy --asyncio-mode=auto || echo 'Python tests skipped'",
-    "typecheck": "tsc --noEmit -p typescript/tsconfig.json",
-    "lint": "cd typescript && bunx @biomejs/biome check --write .",
-    "lint:check": "bunx @biomejs/biome check ./typescript",
+    "typecheck": "cd typescript && bun run typecheck",
+    "lint": "cd typescript && bun run lint",
+    "lint:check": "cd typescript && bun run lint:check",
     "lint:rust": "test -d rust && cd rust && cargo clippy --all-targets -- -D warnings && cargo fmt || echo 'Rust lint skipped'",
     "lint:python": "test -d python && cd python && ruff check --fix . && ruff format . || echo 'Python lint skipped'",
     "clean": "rm -rf typescript/dist .turbo node_modules",
-    "format": "bunx @biomejs/biome format --write ./typescript",
-    "format:check": "bunx @biomejs/biome format ./typescript",
+    "format": "cd typescript && bun run format",
+    "format:check": "cd typescript && bun run format:check",
     "typecheck:python": "test -d python && cd python && mypy . --ignore-missing-imports || echo 'Python typecheck skipped'",
     "typecheck:rust": "test -d rust && cd rust && cargo check || echo 'Rust typecheck skipped'"
   },
@@ -51,7 +51,7 @@
     "vitest": "^3.0.0"
   },
   "peerDependencies": {
-    "@elizaos/core": "workspace:*"
+    "@elizaos/core": "alpha"
   },
   "agentConfig": {
     "pluginType": "elizaos:client:1.0.0",

@@ -1,7 +1,7 @@
 import type { WhatsAppConfig } from "../types";
 
 export function detectAuthMethod(
-  config: WhatsAppConfig | Record<string, unknown>,
+  config: WhatsAppConfig | Record<string, unknown>
 ): "baileys" | "cloudapi" {
   const explicitMethod = (config as { authMethod?: unknown }).authMethod;
   if (explicitMethod !== undefined) {
@@ -9,7 +9,7 @@ export function detectAuthMethod(
       return explicitMethod;
     }
     throw new Error(
-      `Invalid authMethod: "${String(explicitMethod)}". Must be either "baileys" or "cloudapi".`,
+      `Invalid authMethod: "${String(explicitMethod)}". Must be either "baileys" or "cloudapi".`
     );
   }
 
@@ -22,6 +22,6 @@ export function detectAuthMethod(
   }
 
   throw new Error(
-    "Cannot detect auth method. Provide either authDir (Baileys) or accessToken + phoneNumberId (Cloud API).",
+    "Cannot detect auth method. Provide either authDir (Baileys) or accessToken + phoneNumberId (Cloud API)."
   );
 }

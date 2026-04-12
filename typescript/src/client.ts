@@ -60,9 +60,7 @@ export class WhatsAppClient extends EventEmitter implements IWhatsAppClient {
   /**
    * Send a message of any supported type.
    */
-  async sendMessage(
-    message: WhatsAppMessage,
-  ): Promise<AxiosResponse<WhatsAppMessageResponse>> {
+  async sendMessage(message: WhatsAppMessage): Promise<AxiosResponse<WhatsAppMessageResponse>> {
     const endpoint = `/${this.config.phoneNumberId}/messages`;
     const payload = this.buildMessagePayload(message);
     return this.client.post(endpoint, payload);
@@ -74,7 +72,7 @@ export class WhatsAppClient extends EventEmitter implements IWhatsAppClient {
   async sendTextMessage(
     to: string,
     text: string,
-    _previewUrl = false,
+    _previewUrl = false
   ): Promise<AxiosResponse<WhatsAppMessageResponse>> {
     return this.sendMessage({
       type: "text",
@@ -101,17 +99,13 @@ export class WhatsAppClient extends EventEmitter implements IWhatsAppClient {
     };
 
     try {
-      const response = await this.client.post<WhatsAppMessageResponse>(
-        endpoint,
-        payload,
-      );
+      const response = await this.client.post<WhatsAppMessageResponse>(endpoint, payload);
       return {
         success: true,
         messageId: response.data.messages?.[0]?.id,
       };
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       return {
         success: false,
         error: errorMessage,
@@ -122,10 +116,7 @@ export class WhatsAppClient extends EventEmitter implements IWhatsAppClient {
   /**
    * Remove a reaction from a message (send empty emoji).
    */
-  async removeReaction(
-    to: string,
-    messageId: string,
-  ): Promise<SendReactionResult> {
+  async removeReaction(to: string, messageId: string): Promise<SendReactionResult> {
     return this.sendReaction({
       to,
       messageId,
@@ -139,7 +130,7 @@ export class WhatsAppClient extends EventEmitter implements IWhatsAppClient {
   async sendImage(
     to: string,
     imageUrl: string,
-    caption?: string,
+    caption?: string
   ): Promise<AxiosResponse<WhatsAppMessageResponse>> {
     return this.sendMessage({
       type: "image",
@@ -157,7 +148,7 @@ export class WhatsAppClient extends EventEmitter implements IWhatsAppClient {
   async sendVideo(
     to: string,
     videoUrl: string,
-    caption?: string,
+    caption?: string
   ): Promise<AxiosResponse<WhatsAppMessageResponse>> {
     return this.sendMessage({
       type: "video",
@@ -172,10 +163,7 @@ export class WhatsAppClient extends EventEmitter implements IWhatsAppClient {
   /**
    * Send an audio message.
    */
-  async sendAudio(
-    to: string,
-    audioUrl: string,
-  ): Promise<AxiosResponse<WhatsAppMessageResponse>> {
+  async sendAudio(to: string, audioUrl: string): Promise<AxiosResponse<WhatsAppMessageResponse>> {
     return this.sendMessage({
       type: "audio",
       to,
@@ -192,7 +180,7 @@ export class WhatsAppClient extends EventEmitter implements IWhatsAppClient {
     to: string,
     documentUrl: string,
     filename?: string,
-    caption?: string,
+    caption?: string
   ): Promise<AxiosResponse<WhatsAppMessageResponse>> {
     return this.sendMessage({
       type: "document",
@@ -213,7 +201,7 @@ export class WhatsAppClient extends EventEmitter implements IWhatsAppClient {
     latitude: number,
     longitude: number,
     name?: string,
-    address?: string,
+    address?: string
   ): Promise<AxiosResponse<WhatsAppMessageResponse>> {
     return this.sendMessage({
       type: "location",
@@ -235,7 +223,7 @@ export class WhatsAppClient extends EventEmitter implements IWhatsAppClient {
     bodyText: string,
     buttons: Array<{ id: string; title: string }>,
     headerText?: string,
-    footerText?: string,
+    footerText?: string
   ): Promise<AxiosResponse<WhatsAppMessageResponse>> {
     const interactive: WhatsAppInteractiveMessage = {
       type: "button",
@@ -274,7 +262,7 @@ export class WhatsAppClient extends EventEmitter implements IWhatsAppClient {
       rows: Array<{ id: string; title: string; description?: string }>;
     }>,
     headerText?: string,
-    footerText?: string,
+    footerText?: string
   ): Promise<AxiosResponse<WhatsAppMessageResponse>> {
     const interactive: WhatsAppInteractiveMessage = {
       type: "list",
@@ -341,9 +329,7 @@ export class WhatsAppClient extends EventEmitter implements IWhatsAppClient {
   /**
    * Build the message payload based on message type.
    */
-  private buildMessagePayload(
-    message: WhatsAppMessage,
-  ): Record<string, unknown> {
+  private buildMessagePayload(message: WhatsAppMessage): Record<string, unknown> {
     const basePayload = {
       messaging_product: "whatsapp",
       recipient_type: "individual",
@@ -447,8 +433,7 @@ export class WhatsAppClient extends EventEmitter implements IWhatsAppClient {
       }
 
       case "interactive": {
-        const interactiveContent =
-          message.content as WhatsAppInteractiveMessage;
+        const interactiveContent = message.content as WhatsAppInteractiveMessage;
         return {
           ...basePayload,
           ...contextPayload,

@@ -25,8 +25,7 @@ export class WhatsAppPlugin extends EventEmitter implements Plugin {
   constructor(config: WhatsAppConfig) {
     super();
     this.name = "WhatsApp Plugin";
-    this.description =
-      "WhatsApp integration supporting Cloud API and Baileys (QR auth)";
+    this.description = "WhatsApp integration supporting Cloud API and Baileys (QR auth)";
     this.client = ClientFactory.create(config);
     this.messageHandler = new MessageHandler(this.client);
     this.webhookHandler = new WebhookHandler();
@@ -53,9 +52,7 @@ export class WhatsAppPlugin extends EventEmitter implements Plugin {
     return this.client.getConnectionStatus();
   }
 
-  async sendMessage(
-    message: WhatsAppMessage,
-  ): Promise<WhatsAppMessageResponse> {
+  async sendMessage(message: WhatsAppMessage): Promise<WhatsAppMessageResponse> {
     return this.messageHandler.send(message);
   }
 
@@ -65,9 +62,7 @@ export class WhatsAppPlugin extends EventEmitter implements Plugin {
 
   async verifyWebhook(token: string): Promise<boolean> {
     if (!this.client.verifyWebhook) {
-      throw new Error(
-        "verifyWebhook is only supported by Cloud API authentication",
-      );
+      throw new Error("verifyWebhook is only supported by Cloud API authentication");
     }
     return this.client.verifyWebhook(token);
   }

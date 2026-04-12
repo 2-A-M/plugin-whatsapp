@@ -8,11 +8,7 @@ import type {
   Memory,
   State,
 } from "@elizaos/core";
-import {
-  composePromptFromState,
-  ModelType,
-  parseJSONObjectFromText,
-} from "@elizaos/core";
+import { composePromptFromState, ModelType, parseJSONObjectFromText } from "@elizaos/core";
 
 export const WHATSAPP_SEND_REACTION_ACTION = "WHATSAPP_SEND_REACTION";
 
@@ -48,13 +44,12 @@ export const sendReactionAction: Action = {
     _runtime: IAgentRuntime,
     message: Memory,
     _state?: State,
-    _options?: HandlerOptions,
+    _options?: HandlerOptions
   ): Promise<boolean> => {
     const text = message.content?.text?.toLowerCase() ?? "";
     const hasIntent =
-      ["whatsapp", "send", "reaction"].some((keyword) =>
-        text.includes(keyword),
-      ) && /\b(?:whatsapp|send|reaction)\b/i.test(text);
+      ["whatsapp", "send", "reaction"].some((keyword) => text.includes(keyword)) &&
+      /\b(?:whatsapp|send|reaction)\b/i.test(text);
     return hasIntent && message.content?.source === "whatsapp";
   },
 
@@ -63,15 +58,12 @@ export const sendReactionAction: Action = {
     message: Memory,
     state: State | undefined,
     _options?: HandlerOptions,
-    callback?: HandlerCallback,
+    callback?: HandlerCallback
   ): Promise<ActionResult> => {
     // Get WhatsApp settings
     const accessToken = runtime.getSetting("WHATSAPP_ACCESS_TOKEN") as string;
-    const phoneNumberId = runtime.getSetting(
-      "WHATSAPP_PHONE_NUMBER_ID",
-    ) as string;
-    const apiVersion =
-      (runtime.getSetting("WHATSAPP_API_VERSION") as string) || "v24.0";
+    const phoneNumberId = runtime.getSetting("WHATSAPP_PHONE_NUMBER_ID") as string;
+    const apiVersion = (runtime.getSetting("WHATSAPP_API_VERSION") as string) || "v24.0";
 
     if (!accessToken || !phoneNumberId) {
       if (callback) {
@@ -96,9 +88,7 @@ export const sendReactionAction: Action = {
         prompt,
       });
 
-      const parsed = parseJSONObjectFromText(
-        response,
-      ) as unknown as ReactionParams | null;
+      const parsed = parseJSONObjectFromText(response) as unknown as ReactionParams | null;
       if (!parsed?.messageId || !parsed.emoji) {
         // Try to use context from message
         const messageId = message.content?.messageId as string;
@@ -177,8 +167,7 @@ export const sendReactionAction: Action = {
         },
       };
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       if (callback) {
         await callback({
           text: `Failed to send reaction: ${errorMessage}`,
