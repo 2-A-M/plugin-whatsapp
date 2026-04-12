@@ -9,15 +9,10 @@ from __future__ import annotations
 
 from typing import Any
 
-import pytest
-
 from elizaos_plugin_whatsapp.accounts import (
     DEFAULT_ACCOUNT_ID,
-    ResolvedWhatsAppAccount,
     WhatsAppAccountRuntimeConfig,
     WhatsAppGroupRuntimeConfig,
-    WhatsAppMultiAccountConfig,
-    WhatsAppTokenResolution,
     WhatsAppTokenSource,
     get_multi_account_config,
     is_multi_account_enabled,
@@ -32,7 +27,6 @@ from elizaos_plugin_whatsapp.accounts import (
     resolve_whatsapp_group_config,
     resolve_whatsapp_token,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers

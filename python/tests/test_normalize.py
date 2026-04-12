@@ -6,8 +6,6 @@ of all normalization, chunking, formatting, and edge-case behaviour.
 
 from __future__ import annotations
 
-import pytest
-
 from elizaos_plugin_whatsapp.normalize import (
     WHATSAPP_TEXT_CHUNK_LIMIT,
     build_whatsapp_user_jid,
@@ -24,7 +22,6 @@ from elizaos_plugin_whatsapp.normalize import (
     resolve_whatsapp_system_location,
     truncate_text,
 )
-
 
 # ===================================================================
 # normalizeE164

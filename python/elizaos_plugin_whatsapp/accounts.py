@@ -11,7 +11,6 @@ from typing import Literal, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
