@@ -5,6 +5,7 @@ import { ClientFactory } from "./clients/factory";
 import type { IWhatsAppClient } from "./clients/interface";
 import { MessageHandler, WebhookHandler } from "./handlers";
 import { WhatsAppConnectorService } from "./runtime-service";
+import { whatsappSetupRoutes } from "./setup-routes";
 import type {
   ConnectionStatus,
   WhatsAppConfig,
@@ -73,6 +74,7 @@ const whatsappPlugin: Plugin = {
   description: "WhatsApp integration for ElizaOS (Cloud API + Baileys)",
   actions: [sendMessageAction, sendReactionAction],
   services: [WhatsAppConnectorService],
+  routes: whatsappSetupRoutes,
 };
 
 export default whatsappPlugin;
@@ -127,4 +129,14 @@ export {
   WHATSAPP_TEXT_CHUNK_LIMIT,
 } from "./normalize";
 export { WhatsAppConnectorService } from "./runtime-service";
+export { whatsappSetupRoutes, stopAllPairingSessions } from "./setup-routes";
+export {
+  sanitizeAccountId as sanitizeWhatsAppAccountId,
+  whatsappAuthExists,
+  whatsappLogout,
+  WhatsAppPairingSession,
+  type WhatsAppPairingEvent,
+  type WhatsAppPairingOptions,
+  type WhatsAppPairingStatus,
+} from "./pairing-service";
 export * from "./types";

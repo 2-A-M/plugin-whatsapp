@@ -39,7 +39,7 @@
     "format:check": "cd typescript && bun run format:check",
     "typecheck:python": "test -d python && cd python && mypy . --ignore-missing-imports || echo 'Python typecheck skipped'",
     "typecheck:rust": "test -d rust && cd rust && cargo check || echo 'Rust typecheck skipped'",
-    "test:e2e": "node ../../scripts/run-local-plugin-live-smoke.mjs",
+    "test:e2e": "node ../../packages/app-core/scripts/run-local-plugin-live-smoke.mjs",
     "test:live": "bun run test:e2e"
   },
   "dependencies": {
