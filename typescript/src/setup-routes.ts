@@ -17,13 +17,13 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { IAgentRuntime, Route, RouteRequest, RouteResponse } from "@elizaos/core";
+import type { WhatsAppPairingEvent } from "./pairing-service.js";
 import {
   sanitizeAccountId,
+  WhatsAppPairingSession,
   whatsappAuthExists,
   whatsappLogout,
-  WhatsAppPairingSession,
 } from "./pairing-service.js";
-import type { WhatsAppPairingEvent } from "./pairing-service.js";
 
 // ── Module-level state ─────────────────────────────────────────────────
 // Replaces WhatsAppRouteState.whatsappPairingSessions — shared across
@@ -58,8 +58,23 @@ interface ConnectorSetupService {
   broadcastWs(data: Record<string, unknown>): void;
 }
 
+function isConnectorSetupService(service: unknown): service is ConnectorSetupService {
+  return (
+    typeof service === "object" &&
+    service !== null &&
+    typeof (service as ConnectorSetupService).getConfig === "function" &&
+    typeof (service as ConnectorSetupService).persistConfig === "function" &&
+    typeof (service as ConnectorSetupService).updateConfig === "function" &&
+    typeof (service as ConnectorSetupService).registerEscalationChannel === "function" &&
+    typeof (service as ConnectorSetupService).setOwnerContact === "function" &&
+    typeof (service as ConnectorSetupService).getWorkspaceDir === "function" &&
+    typeof (service as ConnectorSetupService).broadcastWs === "function"
+  );
+}
+
 function getSetupService(runtime: IAgentRuntime): ConnectorSetupService | null {
-  return runtime.getService("connector-setup") as ConnectorSetupService | null;
+  const service = runtime.getService("connector-setup");
+  return isConnectorSetupService(service) ? service : null;
 }
 
 /** Clean up disconnected / timed-out / errored sessions. */
@@ -77,11 +92,11 @@ function cleanupStaleSessions(): void {
 async function handleWebhookVerify(
   req: RouteRequest,
   res: RouteResponse,
-  runtime: IAgentRuntime,
+  runtime: IAgentRuntime
 ): Promise<void> {
   const url = new URL(
     (req as unknown as { url?: string }).url ?? "/",
-    `http://${((req as unknown as { headers?: Record<string, string> }).headers?.host) ?? "localhost"}`,
+    `http://${(req as unknown as { headers?: Record<string, string> }).headers?.host ?? "localhost"}`
   );
   const mode = url.searchParams.get("hub.mode") ?? "";
   const token = url.searchParams.get("hub.verify_token") ?? "";
@@ -89,11 +104,7 @@ async function handleWebhookVerify(
 
   const service = runtime.getService("whatsapp") as
     | {
-        verifyWebhook?: (
-          mode: string,
-          token: string,
-          challenge: string,
-        ) => string | null;
+        verifyWebhook?: (mode: string, token: string, challenge: string) => string | null;
       }
     | null
     | undefined;
@@ -117,7 +128,7 @@ async function handleWebhookVerify(
 async function handleWebhookEvent(
   req: RouteRequest,
   res: RouteResponse,
-  runtime: IAgentRuntime,
+  runtime: IAgentRuntime
 ): Promise<void> {
   const service = runtime.getService("whatsapp") as
     | {
@@ -147,7 +158,7 @@ async function handleWebhookEvent(
 async function handlePair(
   req: RouteRequest,
   res: RouteResponse,
-  runtime: IAgentRuntime,
+  runtime: IAgentRuntime
 ): Promise<void> {
   cleanupStaleSessions();
 
@@ -159,7 +170,7 @@ async function handlePair(
     accountId = sanitizeAccountId(
       body && typeof body.accountId === "string" && body.accountId.trim()
         ? body.accountId.trim()
-        : "default",
+        : "default"
     );
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
@@ -197,8 +208,9 @@ async function handlePair(
           });
 
           // Auto-populate owner contact so LifeOps can deliver reminders
-          const phoneNumber = (event as unknown as Record<string, unknown>)
-            .phoneNumber as string | undefined;
+          const phoneNumber = (event as unknown as Record<string, unknown>).phoneNumber as
+            | string
+            | undefined;
           setupService.setOwnerContact({
             source: "whatsapp",
             channelId: phoneNumber ?? undefined,
@@ -222,21 +234,19 @@ async function handlePair(
 async function handleStatus(
   req: RouteRequest,
   res: RouteResponse,
-  runtime: IAgentRuntime,
+  runtime: IAgentRuntime
 ): Promise<void> {
   cleanupStaleSessions();
 
   const setupService = getSetupService(runtime);
   const url = new URL(
     (req as unknown as { url?: string }).url ?? "/",
-    `http://${((req as unknown as { headers?: Record<string, string> }).headers?.host) ?? "localhost"}`,
+    `http://${(req as unknown as { headers?: Record<string, string> }).headers?.host ?? "localhost"}`
   );
 
   let accountId: string;
   try {
-    accountId = sanitizeAccountId(
-      url.searchParams.get("accountId") || "default",
-    );
+    accountId = sanitizeAccountId(url.searchParams.get("accountId") || "default");
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
     return;
@@ -248,13 +258,11 @@ async function handleStatus(
   let serviceConnected = false;
   let servicePhone: string | null = null;
   try {
-    const waService = runtime.getService("whatsapp") as Record<
-      string,
-      unknown
-    > | null;
-    if (waService) {
-      serviceConnected = Boolean(waService.connected);
-      servicePhone = (waService.phoneNumber as string) ?? null;
+    const waService = runtime.getService("whatsapp");
+    if (waService && typeof waService === "object") {
+      const waState = waService as unknown as Record<string, unknown>;
+      serviceConnected = Boolean(waState.connected);
+      servicePhone = typeof waState.phoneNumber === "string" ? waState.phoneNumber : null;
     }
   } catch {
     /* service not yet registered */
@@ -273,7 +281,7 @@ async function handleStatus(
 async function handlePairStop(
   req: RouteRequest,
   res: RouteResponse,
-  _runtime: IAgentRuntime,
+  _runtime: IAgentRuntime
 ): Promise<void> {
   const body = req.body as { accountId?: string } | null;
 
@@ -282,7 +290,7 @@ async function handlePairStop(
     accountId = sanitizeAccountId(
       body && typeof body.accountId === "string" && body.accountId.trim()
         ? body.accountId.trim()
-        : "default",
+        : "default"
     );
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
@@ -302,7 +310,7 @@ async function handlePairStop(
 async function handleDisconnect(
   req: RouteRequest,
   res: RouteResponse,
-  runtime: IAgentRuntime,
+  runtime: IAgentRuntime
 ): Promise<void> {
   const setupService = getSetupService(runtime);
   const body = req.body as { accountId?: string } | null;
@@ -312,7 +320,7 @@ async function handleDisconnect(
     accountId = sanitizeAccountId(
       body && typeof body.accountId === "string" && body.accountId.trim()
         ? body.accountId.trim()
-        : "default",
+        : "default"
     );
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
@@ -332,7 +340,7 @@ async function handleDisconnect(
   } catch (logoutErr) {
     console.warn(
       `[whatsapp] Logout failed for ${accountId}, deleting auth files directly:`,
-      String(logoutErr),
+      String(logoutErr)
     );
     const authDir = path.join(workspaceDir, "whatsapp-auth", accountId);
     try {
@@ -360,6 +368,7 @@ async function handleDisconnect(
  */
 export const whatsappSetupRoutes: Route[] = [
   {
+    name: "whatsapp-webhook-verify",
     type: "GET",
     path: "/api/whatsapp/webhook",
     handler: handleWebhookVerify,
@@ -367,6 +376,7 @@ export const whatsappSetupRoutes: Route[] = [
     public: true, // Meta webhook verification must bypass auth
   },
   {
+    name: "whatsapp-webhook-event",
     type: "POST",
     path: "/api/whatsapp/webhook",
     handler: handleWebhookEvent,

@@ -55,9 +55,7 @@ class WhatsAppService(Service):
         service.config = config
 
         if not config:
-            logger.warning(
-                "WhatsApp configuration not available - service unavailable"
-            )
+            logger.warning("WhatsApp configuration not available - service unavailable")
             return service
 
         if not config.enabled:
@@ -109,9 +107,7 @@ class WhatsAppService(Service):
         self, message: IncomingMessage, phone_number_id: str
     ) -> None:
         """Handles an incoming message."""
-        logger.info(
-            "Received message from %s (type: %s)", message.from_, message.type
-        )
+        logger.info("Received message from %s (type: %s)", message.from_, message.type)
 
         if message.text:
             logger.debug("Message text: %s", message.text.body)

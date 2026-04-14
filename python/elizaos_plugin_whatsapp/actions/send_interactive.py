@@ -1,4 +1,5 @@
 """Send interactive message action for WhatsApp plugin."""
+
 import logging
 from dataclasses import dataclass, field
 from typing import Literal

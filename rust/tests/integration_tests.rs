@@ -1,17 +1,31 @@
 //! Integration tests for the WhatsApp plugin
 
-use elizaos_plugin_whatsapp::{
-    WhatsAppConfig, WhatsAppError, WhatsAppPlugin, WHATSAPP_SERVICE_NAME,
-    create_plugin,
-    // Types
-    MessageType, MessageContent, WhatsAppMessage, WhatsAppMessageResponse,
-    WhatsAppContact, WhatsAppMessageId, WhatsAppChatState,
-    TextMessage, MediaMessage, LocationMessage, ReactionMessage,
-    WhatsAppWebhookEvent, MessageStatus,
-    IncomingMessage, TemplateLanguage, TemplateComponent,
-};
 use elizaos_plugin_whatsapp::actions::SendMessageAction;
 use elizaos_plugin_whatsapp::providers::ChatStateProvider;
+use elizaos_plugin_whatsapp::{
+    create_plugin,
+    IncomingMessage,
+    LocationMessage,
+    MediaMessage,
+    MessageContent,
+    MessageStatus,
+    // Types
+    MessageType,
+    ReactionMessage,
+    TemplateComponent,
+    TemplateLanguage,
+    TextMessage,
+    WhatsAppChatState,
+    WhatsAppConfig,
+    WhatsAppContact,
+    WhatsAppError,
+    WhatsAppMessage,
+    WhatsAppMessageId,
+    WhatsAppMessageResponse,
+    WhatsAppPlugin,
+    WhatsAppWebhookEvent,
+    WHATSAPP_SERVICE_NAME,
+};
 
 // ============================================================================
 // Config Tests
@@ -48,15 +62,13 @@ fn test_config_validate_empty_phone_id() {
 
 #[test]
 fn test_config_builder_webhook_token() {
-    let config = WhatsAppConfig::new("token", "phone-id")
-        .with_webhook_token("wh-token");
+    let config = WhatsAppConfig::new("token", "phone-id").with_webhook_token("wh-token");
     assert_eq!(config.webhook_verify_token, Some("wh-token".to_string()));
 }
 
 #[test]
 fn test_config_builder_business_id() {
-    let config = WhatsAppConfig::new("token", "phone-id")
-        .with_business_id("biz-123");
+    let config = WhatsAppConfig::new("token", "phone-id").with_business_id("biz-123");
     assert_eq!(config.business_id, Some("biz-123".to_string()));
 }
 
@@ -244,10 +256,17 @@ fn test_message_type_serde() {
 #[test]
 fn test_message_type_all_variants() {
     let variants = vec![
-        MessageType::Text, MessageType::Image, MessageType::Audio,
-        MessageType::Video, MessageType::Document, MessageType::Sticker,
-        MessageType::Location, MessageType::Contacts, MessageType::Template,
-        MessageType::Interactive, MessageType::Reaction,
+        MessageType::Text,
+        MessageType::Image,
+        MessageType::Audio,
+        MessageType::Video,
+        MessageType::Document,
+        MessageType::Sticker,
+        MessageType::Location,
+        MessageType::Contacts,
+        MessageType::Template,
+        MessageType::Interactive,
+        MessageType::Reaction,
     ];
     for variant in variants {
         let json = serde_json::to_string(&variant).unwrap();
@@ -261,7 +280,9 @@ fn test_whatsapp_message_text() {
     let msg = WhatsAppMessage {
         to: "15551234567".to_string(),
         message_type: MessageType::Text,
-        content: MessageContent::Text { body: "Hello!".to_string() },
+        content: MessageContent::Text {
+            body: "Hello!".to_string(),
+        },
     };
     assert_eq!(msg.to, "15551234567");
     assert_eq!(msg.message_type, MessageType::Text);
@@ -279,7 +300,13 @@ fn test_whatsapp_message_location() {
             address: None,
         },
     };
-    if let MessageContent::Location { latitude, longitude, name, address } = &msg.content {
+    if let MessageContent::Location {
+        latitude,
+        longitude,
+        name,
+        address,
+    } = &msg.content
+    {
         assert!((latitude - 37.7749).abs() < 0.001);
         assert!((longitude + 122.4194).abs() < 0.001);
         assert_eq!(name.as_deref(), Some("SF"));
@@ -337,7 +364,9 @@ fn test_whatsapp_message_response_serde() {
 
 #[test]
 fn test_text_message() {
-    let msg = TextMessage { body: "Hello".to_string() };
+    let msg = TextMessage {
+        body: "Hello".to_string(),
+    };
     assert_eq!(msg.body, "Hello");
 }
 
@@ -449,12 +478,17 @@ fn test_webhook_event_serde() {
     let event: WhatsAppWebhookEvent = serde_json::from_str(json).unwrap();
     assert_eq!(event.object, "whatsapp_business_account");
     assert_eq!(event.entry[0].changes[0].field, "messages");
-    assert_eq!(event.entry[0].changes[0].value.metadata.phone_number_id, "phone-123");
+    assert_eq!(
+        event.entry[0].changes[0].value.metadata.phone_number_id,
+        "phone-123"
+    );
 }
 
 #[test]
 fn test_template_language() {
-    let lang = TemplateLanguage { code: "en_US".to_string() };
+    let lang = TemplateLanguage {
+        code: "en_US".to_string(),
+    };
     let json = serde_json::to_string(&lang).unwrap();
     assert!(json.contains("en_US"));
 }

@@ -35,7 +35,10 @@ impl WhatsAppClient {
         let response = self
             .client
             .post(&url)
-            .header("Authorization", format!("Bearer {}", self.config.access_token))
+            .header(
+                "Authorization",
+                format!("Bearer {}", self.config.access_token),
+            )
             .header("Content-Type", "application/json")
             .json(&payload)
             .send()
@@ -48,7 +51,10 @@ impl WhatsAppClient {
         }
 
         let result: WhatsAppMessageResponse = response.json().await?;
-        info!("Message sent successfully: {:?}", result.messages.first().map(|m| &m.id));
+        info!(
+            "Message sent successfully: {:?}",
+            result.messages.first().map(|m| &m.id)
+        );
 
         Ok(result)
     }

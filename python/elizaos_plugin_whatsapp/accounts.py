@@ -277,13 +277,12 @@ def list_whatsapp_account_ids(runtime: AgentRuntime) -> list[str]:
     env_phone = runtime.get_setting("WHATSAPP_PHONE_NUMBER_ID")
 
     base_configured = bool(
-        config.access_token and config.access_token.strip()
-        and config.phone_number_id and config.phone_number_id.strip()
+        config.access_token
+        and config.access_token.strip()
+        and config.phone_number_id
+        and config.phone_number_id.strip()
     )
-    env_configured = bool(
-        env_token and env_token.strip()
-        and env_phone and env_phone.strip()
-    )
+    env_configured = bool(env_token and env_token.strip() and env_phone and env_phone.strip())
 
     if base_configured or env_configured:
         ids.add(DEFAULT_ACCOUNT_ID)
@@ -345,9 +344,7 @@ def _get_account_config(
 # ---------------------------------------------------------------------------
 
 
-def resolve_whatsapp_token(
-    runtime: AgentRuntime, account_id: str
-) -> WhatsAppTokenResolution:
+def resolve_whatsapp_token(runtime: AgentRuntime, account_id: str) -> WhatsAppTokenResolution:
     """Resolve the access token for a WhatsApp account.
 
     Resolution order:
@@ -399,9 +396,7 @@ def _merge_whatsapp_account_config(
     """Merge environment, base, and account-specific configuration."""
     multi_config = get_multi_account_config(runtime)
     account_config = _get_account_config(runtime, account_id)
-    account_dict = (
-        account_config.model_dump(by_alias=True) if account_config else {}
-    )
+    account_dict = account_config.model_dump(by_alias=True) if account_config else {}
 
     # Base config (everything except ``accounts``)
     base_dict = multi_config.model_dump(by_alias=True, exclude={"accounts"})
@@ -480,8 +475,7 @@ def list_enabled_whatsapp_accounts(runtime: AgentRuntime) -> list[ResolvedWhatsA
     return [
         acct
         for acct in (
-            resolve_whatsapp_account(runtime, aid)
-            for aid in list_whatsapp_account_ids(runtime)
+            resolve_whatsapp_account(runtime, aid) for aid in list_whatsapp_account_ids(runtime)
         )
         if acct.enabled and acct.configured
     ]

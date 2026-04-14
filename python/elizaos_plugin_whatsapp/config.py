@@ -13,9 +13,7 @@ class WhatsAppConfig(BaseModel):
 
     access_token: str = Field(description="WhatsApp Cloud API access token")
     phone_number_id: str = Field(description="Phone number ID")
-    webhook_verify_token: str | None = Field(
-        default=None, description="Webhook verification token"
-    )
+    webhook_verify_token: str | None = Field(default=None, description="Webhook verification token")
     business_id: str | None = Field(default=None, description="Business account ID")
     api_version: str = Field(default="v17.0", description="API version")
     enabled: bool = Field(default=True, description="Whether the plugin is enabled")

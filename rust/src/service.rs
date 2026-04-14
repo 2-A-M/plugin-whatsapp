@@ -3,7 +3,9 @@
 use crate::client::WhatsAppClient;
 use crate::config::WhatsAppConfig;
 use crate::error::{Result, WhatsAppError};
-use crate::types::{IncomingMessage, WhatsAppChatState, WhatsAppMessageResponse, WhatsAppWebhookEvent};
+use crate::types::{
+    IncomingMessage, WhatsAppChatState, WhatsAppMessageResponse, WhatsAppWebhookEvent,
+};
 use crate::WHATSAPP_SERVICE_NAME;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -33,7 +35,7 @@ impl WhatsAppService {
     pub fn with_config(config: WhatsAppConfig) -> Result<Self> {
         config.validate()?;
         let client = WhatsAppClient::new(config.clone());
-        
+
         Ok(Self {
             client: Arc::new(RwLock::new(Some(client))),
             config: Arc::new(RwLock::new(Some(config))),
@@ -102,11 +104,14 @@ impl WhatsAppService {
                 if change.field == "messages" {
                     if let Some(messages) = change.value.messages {
                         for message in messages {
-                            self.handle_incoming_message(&message, &change.value.metadata.phone_number_id)
-                                .await?;
+                            self.handle_incoming_message(
+                                &message,
+                                &change.value.metadata.phone_number_id,
+                            )
+                            .await?;
                         }
                     }
-                    
+
                     // Update contact info
                     if let Some(contacts) = change.value.contacts {
                         for contact in contacts {
@@ -125,7 +130,11 @@ impl WhatsAppService {
         Ok(())
     }
 
-    async fn handle_incoming_message(&self, message: &IncomingMessage, phone_number_id: &str) -> Result<()> {
+    async fn handle_incoming_message(
+        &self,
+        message: &IncomingMessage,
+        phone_number_id: &str,
+    ) -> Result<()> {
         info!(
             "Received message from {} (type: {})",
             message.from, message.message_type
@@ -150,7 +159,10 @@ impl WhatsAppService {
                     .unwrap_or_else(|_| chrono::Utc::now().timestamp()),
             ),
         };
-        self.chat_states.write().await.insert(message.from.clone(), state);
+        self.chat_states
+            .write()
+            .await
+            .insert(message.from.clone(), state);
 
         Ok(())
     }

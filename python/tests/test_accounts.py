@@ -119,13 +119,15 @@ class TestGetMultiAccountConfig:
         assert config.accounts is None
 
     def test_config_from_character(self) -> None:
-        rt = _rt({
-            "enabled": True,
-            "accessToken": "test-token",
-            "phoneNumberId": "123456789",
-            "dmPolicy": "open",
-            "accounts": {"business": {"phoneNumberId": "987654321"}},
-        })
+        rt = _rt(
+            {
+                "enabled": True,
+                "accessToken": "test-token",
+                "phoneNumberId": "123456789",
+                "dmPolicy": "open",
+                "accounts": {"business": {"phoneNumberId": "987654321"}},
+            }
+        )
         config = get_multi_account_config(rt)
         assert config.enabled is True
         assert config.access_token == "test-token"
@@ -174,12 +176,14 @@ class TestListWhatsAppAccountIds:
         assert DEFAULT_ACCOUNT_ID in ids
 
     def test_named_accounts(self) -> None:
-        rt = _rt({
-            "accounts": {
-                "business1": {"phoneNumberId": "111"},
-                "business2": {"phoneNumberId": "222"},
-            },
-        })
+        rt = _rt(
+            {
+                "accounts": {
+                    "business1": {"phoneNumberId": "111"},
+                    "business2": {"phoneNumberId": "222"},
+                },
+            }
+        )
         ids = list_whatsapp_account_ids(rt)
         assert "business1" in ids
         assert "business2" in ids
@@ -190,12 +194,14 @@ class TestListWhatsAppAccountIds:
         assert ids == ["alpha", "mango", "zebra"]
 
     def test_deduplication(self) -> None:
-        rt = _rt({
-            "accounts": {
-                "Business": {"phoneNumberId": "111"},
-                "business": {"phoneNumberId": "222"},
+        rt = _rt(
+            {
+                "accounts": {
+                    "Business": {"phoneNumberId": "111"},
+                    "business": {"phoneNumberId": "222"},
+                }
             }
-        })
+        )
         ids = list_whatsapp_account_ids(rt)
         assert ids.count("business") == 1
 
@@ -232,10 +238,12 @@ class TestResolveWhatsAppToken:
     """Tests for resolve_whatsapp_token."""
 
     def test_account_config_first(self) -> None:
-        rt = _rt({
-            "accessToken": "base-token",
-            "accounts": {"business": {"accessToken": "business-token"}},
-        })
+        rt = _rt(
+            {
+                "accessToken": "base-token",
+                "accounts": {"business": {"accessToken": "business-token"}},
+            }
+        )
         result = resolve_whatsapp_token(rt, "business")
         assert result.token == "business-token"
         assert result.source == WhatsAppTokenSource.CONFIG
@@ -286,18 +294,20 @@ class TestResolveWhatsAppAccount:
     """Tests for resolve_whatsapp_account."""
 
     def test_merged_config(self) -> None:
-        rt = _rt({
-            "enabled": True,
-            "dmPolicy": "allowlist",
-            "accounts": {
-                "business": {
-                    "name": "My Business",
-                    "accessToken": "business-token",
-                    "phoneNumberId": "123456789",
-                    "dmPolicy": "open",
+        rt = _rt(
+            {
+                "enabled": True,
+                "dmPolicy": "allowlist",
+                "accounts": {
+                    "business": {
+                        "name": "My Business",
+                        "accessToken": "business-token",
+                        "phoneNumberId": "123456789",
+                        "dmPolicy": "open",
+                    },
                 },
-            },
-        })
+            }
+        )
         account = resolve_whatsapp_account(rt, "business")
         assert account.account_id == "business"
         assert account.enabled is True
@@ -318,10 +328,12 @@ class TestResolveWhatsAppAccount:
         assert account.account_id == DEFAULT_ACCOUNT_ID
 
     def test_disabled_when_base_disabled(self) -> None:
-        rt = _rt({
-            "enabled": False,
-            "accounts": {"business": {"enabled": True}},
-        })
+        rt = _rt(
+            {
+                "enabled": False,
+                "accounts": {"business": {"enabled": True}},
+            }
+        )
         account = resolve_whatsapp_account(rt, "business")
         assert account.enabled is False
 
@@ -331,13 +343,15 @@ class TestResolveWhatsAppAccount:
         assert account.configured is False
 
     def test_requires_both_token_and_phone(self) -> None:
-        rt = _rt({
-            "accounts": {
-                "tokenOnly": {"accessToken": "token"},
-                "phoneOnly": {"phoneNumberId": "123"},
-                "both": {"accessToken": "token", "phoneNumberId": "123"},
-            },
-        })
+        rt = _rt(
+            {
+                "accounts": {
+                    "tokenOnly": {"accessToken": "token"},
+                    "phoneOnly": {"phoneNumberId": "123"},
+                    "both": {"accessToken": "token", "phoneNumberId": "123"},
+                },
+            }
+        )
         assert resolve_whatsapp_account(rt, "tokenOnly").configured is False
         assert resolve_whatsapp_account(rt, "phoneOnly").configured is False
         assert resolve_whatsapp_account(rt, "both").configured is True
@@ -356,10 +370,14 @@ class TestResolveWhatsAppAccount:
         assert account.business_account_id == "env-business"
 
     def test_account_disabled_itself(self) -> None:
-        rt = _rt({
-            "enabled": True,
-            "accounts": {"business": {"enabled": False, "accessToken": "t", "phoneNumberId": "p"}},
-        })
+        rt = _rt(
+            {
+                "enabled": True,
+                "accounts": {
+                    "business": {"enabled": False, "accessToken": "t", "phoneNumberId": "p"}
+                },
+            }
+        )
         account = resolve_whatsapp_account(rt, "business")
         assert account.enabled is False
 
@@ -378,13 +396,23 @@ class TestListEnabledWhatsAppAccounts:
     """Tests for list_enabled_whatsapp_accounts."""
 
     def test_only_enabled_and_configured(self) -> None:
-        rt = _rt({
-            "accounts": {
-                "enabled1": {"enabled": True, "accessToken": "token1", "phoneNumberId": "phone1"},
-                "disabled": {"enabled": False, "accessToken": "token2", "phoneNumberId": "phone2"},
-                "unconfigured": {"enabled": True},
-            },
-        })
+        rt = _rt(
+            {
+                "accounts": {
+                    "enabled1": {
+                        "enabled": True,
+                        "accessToken": "token1",
+                        "phoneNumberId": "phone1",
+                    },
+                    "disabled": {
+                        "enabled": False,
+                        "accessToken": "token2",
+                        "phoneNumberId": "phone2",
+                    },
+                    "unconfigured": {"enabled": True},
+                },
+            }
+        )
         accounts = list_enabled_whatsapp_accounts(rt)
         assert len(accounts) == 1
         assert accounts[0].account_id == "enabled1"
@@ -413,21 +441,28 @@ class TestIsMultiAccountEnabled:
         assert is_multi_account_enabled(rt) is False
 
     def test_multiple_accounts(self) -> None:
-        rt = _rt({
-            "accessToken": "default-token",
-            "phoneNumberId": "default-phone",
-            "accounts": {
-                "business": {"accessToken": "business-token", "phoneNumberId": "business-phone"},
-            },
-        })
+        rt = _rt(
+            {
+                "accessToken": "default-token",
+                "phoneNumberId": "default-phone",
+                "accounts": {
+                    "business": {
+                        "accessToken": "business-token",
+                        "phoneNumberId": "business-phone",
+                    },
+                },
+            }
+        )
         assert is_multi_account_enabled(rt) is True
 
     def test_multiple_but_only_one_configured(self) -> None:
-        rt = _rt({
-            "accessToken": "default-token",
-            "phoneNumberId": "default-phone",
-            "accounts": {"business": {}},
-        })
+        rt = _rt(
+            {
+                "accessToken": "default-token",
+                "phoneNumberId": "default-phone",
+                "accounts": {"business": {}},
+            }
+        )
         assert is_multi_account_enabled(rt) is False
 
 
@@ -440,117 +475,159 @@ class TestIsWhatsAppUserAllowed:
     """Tests for is_whatsapp_user_allowed."""
 
     def test_open_policy_allows_all(self) -> None:
-        assert is_whatsapp_user_allowed(
-            identifier="+1234567890",
-            account_config=WhatsAppAccountRuntimeConfig(dmPolicy="open"),
-            is_group=False,
-        ) is True
+        assert (
+            is_whatsapp_user_allowed(
+                identifier="+1234567890",
+                account_config=WhatsAppAccountRuntimeConfig(dmPolicy="open"),
+                is_group=False,
+            )
+            is True
+        )
 
     def test_disabled_policy_denies_all(self) -> None:
-        assert is_whatsapp_user_allowed(
-            identifier="+1234567890",
-            account_config=WhatsAppAccountRuntimeConfig(dmPolicy="disabled"),
-            is_group=False,
-        ) is False
+        assert (
+            is_whatsapp_user_allowed(
+                identifier="+1234567890",
+                account_config=WhatsAppAccountRuntimeConfig(dmPolicy="disabled"),
+                is_group=False,
+            )
+            is False
+        )
 
     def test_allowlist_in_list(self) -> None:
-        assert is_whatsapp_user_allowed(
-            identifier="+1234567890",
-            account_config=WhatsAppAccountRuntimeConfig(
-                dmPolicy="allowlist", allowFrom=["+1234567890", "+0987654321"]
-            ),
-            is_group=False,
-        ) is True
+        assert (
+            is_whatsapp_user_allowed(
+                identifier="+1234567890",
+                account_config=WhatsAppAccountRuntimeConfig(
+                    dmPolicy="allowlist", allowFrom=["+1234567890", "+0987654321"]
+                ),
+                is_group=False,
+            )
+            is True
+        )
 
     def test_allowlist_not_in_list(self) -> None:
-        assert is_whatsapp_user_allowed(
-            identifier="+1111111111",
-            account_config=WhatsAppAccountRuntimeConfig(
-                dmPolicy="allowlist", allowFrom=["+1234567890", "+0987654321"]
-            ),
-            is_group=False,
-        ) is False
+        assert (
+            is_whatsapp_user_allowed(
+                identifier="+1111111111",
+                account_config=WhatsAppAccountRuntimeConfig(
+                    dmPolicy="allowlist", allowFrom=["+1234567890", "+0987654321"]
+                ),
+                is_group=False,
+            )
+            is False
+        )
 
     def test_pairing_default_for_dms(self) -> None:
-        assert is_whatsapp_user_allowed(
-            identifier="+1234567890",
-            account_config=WhatsAppAccountRuntimeConfig(),
-            is_group=False,
-        ) is True
+        assert (
+            is_whatsapp_user_allowed(
+                identifier="+1234567890",
+                account_config=WhatsAppAccountRuntimeConfig(),
+                is_group=False,
+            )
+            is True
+        )
 
     def test_group_allowlist_allowed(self) -> None:
-        assert is_whatsapp_user_allowed(
-            identifier="+1234567890",
-            account_config=WhatsAppAccountRuntimeConfig(
-                groupPolicy="allowlist", groupAllowFrom=["+1234567890"]
-            ),
-            is_group=True,
-        ) is True
+        assert (
+            is_whatsapp_user_allowed(
+                identifier="+1234567890",
+                account_config=WhatsAppAccountRuntimeConfig(
+                    groupPolicy="allowlist", groupAllowFrom=["+1234567890"]
+                ),
+                is_group=True,
+            )
+            is True
+        )
 
     def test_group_allowlist_denied(self) -> None:
-        assert is_whatsapp_user_allowed(
-            identifier="+1234567890",
-            account_config=WhatsAppAccountRuntimeConfig(
-                groupPolicy="allowlist", groupAllowFrom=["+9999999999"]
-            ),
-            is_group=True,
-        ) is False
+        assert (
+            is_whatsapp_user_allowed(
+                identifier="+1234567890",
+                account_config=WhatsAppAccountRuntimeConfig(
+                    groupPolicy="allowlist", groupAllowFrom=["+9999999999"]
+                ),
+                is_group=True,
+            )
+            is False
+        )
 
     def test_group_open_policy(self) -> None:
-        assert is_whatsapp_user_allowed(
-            identifier="+1234567890",
-            account_config=WhatsAppAccountRuntimeConfig(groupPolicy="open"),
-            is_group=True,
-        ) is True
+        assert (
+            is_whatsapp_user_allowed(
+                identifier="+1234567890",
+                account_config=WhatsAppAccountRuntimeConfig(groupPolicy="open"),
+                is_group=True,
+            )
+            is True
+        )
 
     def test_group_disabled_policy(self) -> None:
-        assert is_whatsapp_user_allowed(
-            identifier="+1234567890",
-            account_config=WhatsAppAccountRuntimeConfig(groupPolicy="disabled"),
-            is_group=True,
-        ) is False
+        assert (
+            is_whatsapp_user_allowed(
+                identifier="+1234567890",
+                account_config=WhatsAppAccountRuntimeConfig(groupPolicy="disabled"),
+                is_group=True,
+            )
+            is False
+        )
 
     def test_group_specific_allowlist(self) -> None:
         group_config = WhatsAppGroupRuntimeConfig(allowFrom=["+1234567890"])
-        assert is_whatsapp_user_allowed(
-            identifier="+1234567890",
-            account_config=WhatsAppAccountRuntimeConfig(groupPolicy="allowlist"),
-            is_group=True,
-            group_config=group_config,
-        ) is True
+        assert (
+            is_whatsapp_user_allowed(
+                identifier="+1234567890",
+                account_config=WhatsAppAccountRuntimeConfig(groupPolicy="allowlist"),
+                is_group=True,
+                group_config=group_config,
+            )
+            is True
+        )
 
     def test_group_specific_allowlist_denied(self) -> None:
         group_config = WhatsAppGroupRuntimeConfig(allowFrom=["+9999999999"])
-        assert is_whatsapp_user_allowed(
-            identifier="+1234567890",
-            account_config=WhatsAppAccountRuntimeConfig(groupPolicy="allowlist"),
-            is_group=True,
-            group_config=group_config,
-        ) is False
+        assert (
+            is_whatsapp_user_allowed(
+                identifier="+1234567890",
+                account_config=WhatsAppAccountRuntimeConfig(groupPolicy="allowlist"),
+                is_group=True,
+                group_config=group_config,
+            )
+            is False
+        )
 
     def test_allowlist_empty_denies(self) -> None:
-        assert is_whatsapp_user_allowed(
-            identifier="+1234567890",
-            account_config=WhatsAppAccountRuntimeConfig(dmPolicy="allowlist"),
-            is_group=False,
-        ) is False
+        assert (
+            is_whatsapp_user_allowed(
+                identifier="+1234567890",
+                account_config=WhatsAppAccountRuntimeConfig(dmPolicy="allowlist"),
+                is_group=False,
+            )
+            is False
+        )
 
     def test_numeric_allowlist_entries(self) -> None:
-        assert is_whatsapp_user_allowed(
-            identifier="1234567890",
-            account_config=WhatsAppAccountRuntimeConfig(
-                dmPolicy="allowlist", allowFrom=[1234567890]
-            ),
-            is_group=False,
-        ) is True
+        assert (
+            is_whatsapp_user_allowed(
+                identifier="1234567890",
+                account_config=WhatsAppAccountRuntimeConfig(
+                    dmPolicy="allowlist", allowFrom=[1234567890]
+                ),
+                is_group=False,
+            )
+            is True
+        )
 
     def test_group_default_policy_is_allowlist(self) -> None:
         # Default group policy is "allowlist" with no entries → denied
-        assert is_whatsapp_user_allowed(
-            identifier="+1234567890",
-            account_config=WhatsAppAccountRuntimeConfig(),
-            is_group=True,
-        ) is False
+        assert (
+            is_whatsapp_user_allowed(
+                identifier="+1234567890",
+                account_config=WhatsAppAccountRuntimeConfig(),
+                is_group=True,
+            )
+            is False
+        )
 
 
 # ===================================================================
@@ -562,46 +639,64 @@ class TestIsWhatsAppGroupAllowed:
     """Tests for is_whatsapp_group_allowed."""
 
     def test_open_policy(self) -> None:
-        assert is_whatsapp_group_allowed(
-            group_id="group@g.us",
-            account_config=WhatsAppAccountRuntimeConfig(groupPolicy="open"),
-        ) is True
+        assert (
+            is_whatsapp_group_allowed(
+                group_id="group@g.us",
+                account_config=WhatsAppAccountRuntimeConfig(groupPolicy="open"),
+            )
+            is True
+        )
 
     def test_disabled_policy(self) -> None:
-        assert is_whatsapp_group_allowed(
-            group_id="group@g.us",
-            account_config=WhatsAppAccountRuntimeConfig(groupPolicy="disabled"),
-        ) is False
+        assert (
+            is_whatsapp_group_allowed(
+                group_id="group@g.us",
+                account_config=WhatsAppAccountRuntimeConfig(groupPolicy="disabled"),
+            )
+            is False
+        )
 
     def test_group_config_enabled(self) -> None:
-        assert is_whatsapp_group_allowed(
-            group_id="group@g.us",
-            account_config=WhatsAppAccountRuntimeConfig(groupPolicy="allowlist"),
-            group_config=WhatsAppGroupRuntimeConfig(enabled=True),
-        ) is True
+        assert (
+            is_whatsapp_group_allowed(
+                group_id="group@g.us",
+                account_config=WhatsAppAccountRuntimeConfig(groupPolicy="allowlist"),
+                group_config=WhatsAppGroupRuntimeConfig(enabled=True),
+            )
+            is True
+        )
 
     def test_group_config_disabled(self) -> None:
-        assert is_whatsapp_group_allowed(
-            group_id="group@g.us",
-            account_config=WhatsAppAccountRuntimeConfig(groupPolicy="allowlist"),
-            group_config=WhatsAppGroupRuntimeConfig(enabled=False),
-        ) is False
+        assert (
+            is_whatsapp_group_allowed(
+                group_id="group@g.us",
+                account_config=WhatsAppAccountRuntimeConfig(groupPolicy="allowlist"),
+                group_config=WhatsAppGroupRuntimeConfig(enabled=False),
+            )
+            is False
+        )
 
     def test_in_group_allowlist(self) -> None:
-        assert is_whatsapp_group_allowed(
-            group_id="group@g.us",
-            account_config=WhatsAppAccountRuntimeConfig(
-                groupPolicy="allowlist", groupAllowFrom=["group@g.us"]
-            ),
-        ) is True
+        assert (
+            is_whatsapp_group_allowed(
+                group_id="group@g.us",
+                account_config=WhatsAppAccountRuntimeConfig(
+                    groupPolicy="allowlist", groupAllowFrom=["group@g.us"]
+                ),
+            )
+            is True
+        )
 
     def test_not_in_group_allowlist(self) -> None:
-        assert is_whatsapp_group_allowed(
-            group_id="group@g.us",
-            account_config=WhatsAppAccountRuntimeConfig(
-                groupPolicy="allowlist", groupAllowFrom=["other@g.us"]
-            ),
-        ) is False
+        assert (
+            is_whatsapp_group_allowed(
+                group_id="group@g.us",
+                account_config=WhatsAppAccountRuntimeConfig(
+                    groupPolicy="allowlist", groupAllowFrom=["other@g.us"]
+                ),
+            )
+            is False
+        )
 
 
 # ===================================================================
@@ -613,21 +708,25 @@ class TestIsWhatsAppMentionRequired:
     """Tests for is_whatsapp_mention_required."""
 
     def test_false_by_default(self) -> None:
-        assert is_whatsapp_mention_required(
-            account_config=WhatsAppAccountRuntimeConfig()
-        ) is False
+        assert is_whatsapp_mention_required(account_config=WhatsAppAccountRuntimeConfig()) is False
 
     def test_true_from_group_config(self) -> None:
-        assert is_whatsapp_mention_required(
-            account_config=WhatsAppAccountRuntimeConfig(),
-            group_config=WhatsAppGroupRuntimeConfig(requireMention=True),
-        ) is True
+        assert (
+            is_whatsapp_mention_required(
+                account_config=WhatsAppAccountRuntimeConfig(),
+                group_config=WhatsAppGroupRuntimeConfig(requireMention=True),
+            )
+            is True
+        )
 
     def test_false_from_group_config(self) -> None:
-        assert is_whatsapp_mention_required(
-            account_config=WhatsAppAccountRuntimeConfig(),
-            group_config=WhatsAppGroupRuntimeConfig(requireMention=False),
-        ) is False
+        assert (
+            is_whatsapp_mention_required(
+                account_config=WhatsAppAccountRuntimeConfig(),
+                group_config=WhatsAppGroupRuntimeConfig(requireMention=False),
+            )
+            is False
+        )
 
 
 # ===================================================================
@@ -639,25 +738,29 @@ class TestResolveWhatsAppGroupConfig:
     """Tests for resolve_whatsapp_group_config."""
 
     def test_account_level_group(self) -> None:
-        rt = _rt({
-            "accounts": {
-                "business": {
-                    "groups": {
-                        "group1@g.us": {"requireMention": True},
+        rt = _rt(
+            {
+                "accounts": {
+                    "business": {
+                        "groups": {
+                            "group1@g.us": {"requireMention": True},
+                        },
                     },
                 },
-            },
-        })
+            }
+        )
         config = resolve_whatsapp_group_config(rt, "business", "group1@g.us")
         assert config is not None
         assert config.require_mention is True
 
     def test_base_level_fallback(self) -> None:
-        rt = _rt({
-            "groups": {
-                "group1@g.us": {"requireMention": True},
-            },
-        })
+        rt = _rt(
+            {
+                "groups": {
+                    "group1@g.us": {"requireMention": True},
+                },
+            }
+        )
         config = resolve_whatsapp_group_config(rt, "business", "group1@g.us")
         assert config is not None
         assert config.require_mention is True
@@ -668,55 +771,63 @@ class TestResolveWhatsAppGroupConfig:
         assert config is None
 
     def test_account_level_overrides_base(self) -> None:
-        rt = _rt({
-            "groups": {
-                "group1@g.us": {"requireMention": False},
-            },
-            "accounts": {
-                "business": {
-                    "groups": {
-                        "group1@g.us": {"requireMention": True},
+        rt = _rt(
+            {
+                "groups": {
+                    "group1@g.us": {"requireMention": False},
+                },
+                "accounts": {
+                    "business": {
+                        "groups": {
+                            "group1@g.us": {"requireMention": True},
+                        },
                     },
                 },
-            },
-        })
+            }
+        )
         config = resolve_whatsapp_group_config(rt, "business", "group1@g.us")
         assert config is not None
         assert config.require_mention is True
 
     def test_base_used_when_no_account_group(self) -> None:
-        rt = _rt({
-            "groups": {
-                "group1@g.us": {"requireMention": True},
-            },
-            "accounts": {
-                "business": {
-                    "groups": {
-                        "other@g.us": {"requireMention": False},
+        rt = _rt(
+            {
+                "groups": {
+                    "group1@g.us": {"requireMention": True},
+                },
+                "accounts": {
+                    "business": {
+                        "groups": {
+                            "other@g.us": {"requireMention": False},
+                        },
                     },
                 },
-            },
-        })
+            }
+        )
         config = resolve_whatsapp_group_config(rt, "business", "group1@g.us")
         assert config is not None
         assert config.require_mention is True
 
     def test_group_skills(self) -> None:
-        rt = _rt({
-            "groups": {
-                "group1@g.us": {"skills": ["translate", "summarize"]},
-            },
-        })
+        rt = _rt(
+            {
+                "groups": {
+                    "group1@g.us": {"skills": ["translate", "summarize"]},
+                },
+            }
+        )
         config = resolve_whatsapp_group_config(rt, "default", "group1@g.us")
         assert config is not None
         assert config.skills == ["translate", "summarize"]
 
     def test_group_system_prompt(self) -> None:
-        rt = _rt({
-            "groups": {
-                "group1@g.us": {"systemPrompt": "You are a helpful assistant."},
-            },
-        })
+        rt = _rt(
+            {
+                "groups": {
+                    "group1@g.us": {"systemPrompt": "You are a helpful assistant."},
+                },
+            }
+        )
         config = resolve_whatsapp_group_config(rt, "default", "group1@g.us")
         assert config is not None
         assert config.system_prompt == "You are a helpful assistant."

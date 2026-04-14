@@ -48,9 +48,7 @@ class WhatsAppClient:
         response = await self._client.post(url, json=payload)
 
         if not response.is_success:
-            raise Exception(
-                f"WhatsApp API error ({response.status_code}): {response.text}"
-            )
+            raise Exception(f"WhatsApp API error ({response.status_code}): {response.text}")
 
         data = response.json()
         result = WhatsAppMessageResponse(**data)
@@ -86,9 +84,7 @@ class WhatsAppClient:
         )
         return await self.send_message(message)
 
-    async def send_reaction(
-        self, to: str, message_id: str, emoji: str
-    ) -> WhatsAppMessageResponse:
+    async def send_reaction(self, to: str, message_id: str, emoji: str) -> WhatsAppMessageResponse:
         """Sends a reaction."""
         message = WhatsAppMessage(
             to=to,

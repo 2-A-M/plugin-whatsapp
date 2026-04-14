@@ -1,4 +1,5 @@
 """Send reaction action for WhatsApp plugin."""
+
 import logging
 from dataclasses import dataclass
 

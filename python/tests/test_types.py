@@ -45,9 +45,17 @@ class TestMessageType:
 
     def test_all_variants(self) -> None:
         expected = {
-            "text", "image", "audio", "video", "document",
-            "sticker", "location", "contacts", "template",
-            "interactive", "reaction",
+            "text",
+            "image",
+            "audio",
+            "video",
+            "document",
+            "sticker",
+            "location",
+            "contacts",
+            "template",
+            "interactive",
+            "reaction",
         }
         actual = {m.value for m in MessageType}
         assert actual == expected

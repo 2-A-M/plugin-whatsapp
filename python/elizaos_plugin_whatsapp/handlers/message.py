@@ -1,4 +1,5 @@
 """Message handler for WhatsApp plugin."""
+
 import logging
 
 from elizaos_plugin_whatsapp.client import WhatsAppClient, WhatsAppClientError

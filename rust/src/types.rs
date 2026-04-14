@@ -32,11 +32,29 @@ pub struct WhatsAppMessage {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum MessageContent {
-    Text { body: String },
-    Media { id: Option<String>, link: Option<String>, caption: Option<String> },
-    Template { name: String, language: TemplateLanguage, components: Vec<TemplateComponent> },
-    Location { latitude: f64, longitude: f64, name: Option<String>, address: Option<String> },
-    Reaction { message_id: String, emoji: String },
+    Text {
+        body: String,
+    },
+    Media {
+        id: Option<String>,
+        link: Option<String>,
+        caption: Option<String>,
+    },
+    Template {
+        name: String,
+        language: TemplateLanguage,
+        components: Vec<TemplateComponent>,
+    },
+    Location {
+        latitude: f64,
+        longitude: f64,
+        name: Option<String>,
+        address: Option<String>,
+    },
+    Reaction {
+        message_id: String,
+        emoji: String,
+    },
 }
 
 /// Template language

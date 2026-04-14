@@ -128,15 +128,15 @@ export {
   truncateText,
   WHATSAPP_TEXT_CHUNK_LIMIT,
 } from "./normalize";
-export { WhatsAppConnectorService } from "./runtime-service";
-export { whatsappSetupRoutes, stopAllPairingSessions } from "./setup-routes";
 export {
   sanitizeAccountId as sanitizeWhatsAppAccountId,
-  whatsappAuthExists,
-  whatsappLogout,
-  WhatsAppPairingSession,
   type WhatsAppPairingEvent,
   type WhatsAppPairingOptions,
+  WhatsAppPairingSession,
   type WhatsAppPairingStatus,
+  whatsappAuthExists,
+  whatsappLogout,
 } from "./pairing-service";
+export { WhatsAppConnectorService } from "./runtime-service";
+export { stopAllPairingSessions, whatsappSetupRoutes } from "./setup-routes";
 export * from "./types";

@@ -1,4 +1,5 @@
 """Webhook handler for WhatsApp plugin."""
+
 import logging
 from collections.abc import Callable
 
