@@ -32,16 +32,16 @@ class TestMessageType:
     """Tests for MessageType enum."""
 
     def test_text(self) -> None:
-        assert MessageType.TEXT == "text"
+        assert MessageType.TEXT.value == "text"
 
     def test_image(self) -> None:
-        assert MessageType.IMAGE == "image"
+        assert MessageType.IMAGE.value == "image"
 
     def test_audio(self) -> None:
-        assert MessageType.AUDIO == "audio"
+        assert MessageType.AUDIO.value == "audio"
 
     def test_video(self) -> None:
-        assert MessageType.VIDEO == "video"
+        assert MessageType.VIDEO.value == "video"
 
     def test_all_variants(self) -> None:
         expected = {
@@ -161,8 +161,8 @@ class TestIncomingMessage:
     """Tests for IncomingMessage."""
 
     def test_text_message(self) -> None:
-        msg = IncomingMessage(
-            **{
+        msg = IncomingMessage.model_validate(
+            {
                 "from": "15551234567",
                 "id": "msg-123",
                 "timestamp": "1699999999",
@@ -177,8 +177,8 @@ class TestIncomingMessage:
         assert msg.text.body == "Hello"
 
     def test_location_message(self) -> None:
-        msg = IncomingMessage(
-            **{
+        msg = IncomingMessage.model_validate(
+            {
                 "from": "15559999999",
                 "id": "msg-456",
                 "timestamp": "1699999999",
@@ -191,8 +191,8 @@ class TestIncomingMessage:
         assert msg.location.latitude == pytest.approx(40.7)
 
     def test_reaction_message(self) -> None:
-        msg = IncomingMessage(
-            **{
+        msg = IncomingMessage.model_validate(
+            {
                 "from": "15551111111",
                 "id": "msg-789",
                 "timestamp": "1700000000",
@@ -251,6 +251,7 @@ class TestWebhookEvent:
         change = event.entry[0].changes[0]
         assert change.field == "messages"
         assert change.value.metadata.phone_number_id == "phone-123"
+        assert change.value.contacts is not None
         assert change.value.contacts[0].profile.name == "John Doe"
 
 

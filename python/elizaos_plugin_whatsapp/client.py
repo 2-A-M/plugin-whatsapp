@@ -13,11 +13,16 @@ from elizaos_plugin_whatsapp.types import (
     ReactionContent,
     TemplateContent,
     TextContent,
+    WhatsAppInteractiveContent,
     WhatsAppMessage,
     WhatsAppMessageResponse,
 )
 
 logger = logging.getLogger(__name__)
+
+
+class WhatsAppClientError(RuntimeError):
+    """Raised when a WhatsApp API request fails."""
 
 
 class WhatsAppClient:
@@ -48,7 +53,7 @@ class WhatsAppClient:
         response = await self._client.post(url, json=payload)
 
         if not response.is_success:
-            raise Exception(f"WhatsApp API error ({response.status_code}): {response.text}")
+            raise WhatsAppClientError(f"WhatsApp API error ({response.status_code}): {response.text}")
 
         data = response.json()
         result = WhatsAppMessageResponse(**data)
@@ -69,6 +74,10 @@ class WhatsAppClient:
         )
         return await self.send_message(message)
 
+    async def send_text_message(self, to: str, text: str) -> WhatsAppMessageResponse:
+        """Compatibility wrapper for legacy callers."""
+        return await self.send_text(to, text)
+
     async def send_image(
         self,
         to: str,
@@ -81,6 +90,56 @@ class WhatsAppClient:
             to=to,
             type=MessageType.IMAGE,
             content=MediaContent(id=media_id, link=link, caption=caption),
+        )
+        return await self.send_message(message)
+
+    async def send_video(
+        self,
+        to: str,
+        video_url: str,
+        caption: str | None = None,
+    ) -> WhatsAppMessageResponse:
+        """Sends a video message."""
+        message = WhatsAppMessage(
+            to=to,
+            type=MessageType.VIDEO,
+            content=MediaContent(link=video_url, caption=caption),
+        )
+        return await self.send_message(message)
+
+    async def send_document(
+        self,
+        to: str,
+        document_url: str,
+        filename: str | None = None,
+        caption: str | None = None,
+    ) -> WhatsAppMessageResponse:
+        """Sends a document message."""
+        message = WhatsAppMessage(
+            to=to,
+            type=MessageType.DOCUMENT,
+            content=MediaContent(link=document_url, caption=caption, filename=filename),
+        )
+        return await self.send_message(message)
+
+    async def send_location(
+        self,
+        to: str,
+        latitude: float,
+        longitude: float,
+        name: str | None = None,
+        address: str | None = None,
+    ) -> WhatsAppMessageResponse:
+        """Sends a location message."""
+        message = WhatsAppMessage(
+            to=to,
+            type=MessageType.LOCATION,
+            content=LocationContent(
+                latitude=latitude,
+                longitude=longitude,
+                name=name,
+                address=address,
+            ),
         )
         return await self.send_message(message)
 
@@ -126,6 +185,8 @@ class WhatsAppClient:
                 "language": {"code": message.content.language.code},
                 "components": [c.model_dump() for c in message.content.components],
             }
+        elif isinstance(message.content, WhatsAppInteractiveContent):
+            payload["interactive"] = message.content.model_dump(exclude_none=True)
         elif isinstance(message.content, LocationContent):
             loc: dict[str, Any] = {
                 "latitude": message.content.latitude,

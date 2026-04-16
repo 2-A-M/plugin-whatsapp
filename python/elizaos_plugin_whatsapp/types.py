@@ -1,7 +1,7 @@
 """Type definitions for the WhatsApp plugin."""
 
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -22,6 +22,19 @@ class MessageType(str, Enum):
     REACTION = "reaction"
 
 
+class WhatsAppEventType(str, Enum):
+    """Webhook event types emitted by the WhatsApp plugin."""
+
+    MESSAGE_RECEIVED = "message_received"
+    REACTION_RECEIVED = "reaction_received"
+    INTERACTIVE_REPLY = "interactive_reply"
+    MESSAGE_SENT = "message_sent"
+    MESSAGE_DELIVERED = "message_delivered"
+    MESSAGE_READ = "message_read"
+    MESSAGE_FAILED = "message_failed"
+    WEBHOOK_VERIFIED = "webhook_verified"
+
+
 class TextContent(BaseModel):
     """Text message content."""
 
@@ -34,6 +47,7 @@ class MediaContent(BaseModel):
     id: str | None = None
     link: str | None = None
     caption: str | None = None
+    filename: str | None = None
 
 
 class TemplateLanguage(BaseModel):
@@ -73,7 +87,27 @@ class ReactionContent(BaseModel):
     emoji: str
 
 
-MessageContent = TextContent | MediaContent | TemplateContent | LocationContent | ReactionContent
+class WhatsAppInteractiveAction(BaseModel):
+    """Interactive message action payload."""
+
+    buttons: list[dict[str, Any]] | None = None
+    button: str | None = None
+    sections: list[dict[str, Any]] | None = None
+
+
+class WhatsAppInteractiveContent(BaseModel):
+    """Interactive message content."""
+
+    type: Literal["button", "list"]
+    body: dict[str, str]
+    action: WhatsAppInteractiveAction
+    header: dict[str, str] | None = None
+    footer: dict[str, str] | None = None
+
+
+MessageContent = (
+    TextContent | MediaContent | TemplateContent | LocationContent | ReactionContent | WhatsAppInteractiveContent
+)
 
 
 class WhatsAppMessage(BaseModel):
@@ -223,3 +257,8 @@ class WhatsAppChatState(BaseModel):
     contact_wa_id: str
     contact_name: str | None = None
     last_message_at: int | None = None
+
+
+WhatsAppMediaContent = MediaContent
+WhatsAppIncomingMessage = IncomingMessage
+WhatsAppStatusUpdate = MessageStatus

@@ -22,6 +22,7 @@ class TestSendMessageActionMetadata:
         assert "WhatsApp" in send_message_action.description
 
     def test_similes(self) -> None:
+        assert send_message_action.similes is not None
         assert "WHATSAPP_SEND" in send_message_action.similes
         assert "TEXT_WHATSAPP" in send_message_action.similes
         assert "MESSAGE_WHATSAPP" in send_message_action.similes
@@ -42,14 +43,19 @@ class TestSendMessageValidate:
 
     @pytest.mark.asyncio
     async def test_returns_false_when_no_service(self) -> None:
+        from elizaos.types import Content, Memory
+
         class MockRuntime:
-            def get_service(self, name: str):
+            def get_service(self, name: str) -> object | None:
                 return None
 
-        class MockMessage:
-            pass
+        message = Memory(
+            room_id="room-1",
+            entity_id="entity-1",
+            content=Content(text="Hello"),
+        )
 
-        result = await validate(MockRuntime(), MockMessage())
+        result = await validate(MockRuntime(), message)
         assert result is False
 
     @pytest.mark.asyncio
@@ -58,13 +64,18 @@ class TestSendMessageValidate:
             is_running = False
 
         class MockRuntime:
-            def get_service(self, name: str):
+            def get_service(self, name: str) -> object | None:
                 return MockService()
 
-        class MockMessage:
-            pass
+        from elizaos.types import Content, Memory
 
-        result = await validate(MockRuntime(), MockMessage())
+        message = Memory(
+            room_id="room-1",
+            entity_id="entity-1",
+            content=Content(text="Hello"),
+        )
+
+        result = await validate(MockRuntime(), message)
         assert result is False
 
     @pytest.mark.asyncio
@@ -73,13 +84,18 @@ class TestSendMessageValidate:
             is_running = True
 
         class MockRuntime:
-            def get_service(self, name: str):
+            def get_service(self, name: str) -> object | None:
                 return MockService()
 
-        class MockMessage:
-            pass
+        from elizaos.types import Content, Memory
 
-        result = await validate(MockRuntime(), MockMessage())
+        message = Memory(
+            room_id="room-1",
+            entity_id="entity-1",
+            content=Content(text="Hello"),
+        )
+
+        result = await validate(MockRuntime(), message)
         assert result is True
 
     @pytest.mark.asyncio
@@ -87,14 +103,19 @@ class TestSendMessageValidate:
         called_with = []
 
         class MockRuntime:
-            def get_service(self, name: str):
+            def get_service(self, name: str) -> object | None:
                 called_with.append(name)
                 return None
 
-        class MockMessage:
-            pass
+        from elizaos.types import Content, Memory
 
-        await validate(MockRuntime(), MockMessage())
+        message = Memory(
+            room_id="room-1",
+            entity_id="entity-1",
+            content=Content(text="Hello"),
+        )
+
+        await validate(MockRuntime(), message)
         assert WHATSAPP_SERVICE_NAME in called_with
 
 
@@ -106,13 +127,14 @@ class TestSendMessageHandler:
         from elizaos.types import Content, Memory
 
         class MockRuntime:
-            def get_service(self, name: str):
+            def get_service(self, name: str) -> object | None:
                 return None
 
-        callback_called = []
+        callback_called: list[Content] = []
 
-        def mock_callback(content):
+        async def mock_callback(content: Content) -> list[Memory]:
             callback_called.append(content)
+            return []
 
         message = Memory(
             room_id="room-1",
@@ -133,7 +155,7 @@ class TestSendMessageHandler:
             is_running = False
 
         class MockRuntime:
-            def get_service(self, name: str):
+            def get_service(self, name: str) -> object | None:
                 return MockService()
 
         message = Memory(

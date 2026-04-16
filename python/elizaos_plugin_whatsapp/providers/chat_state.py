@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from elizaos.types import Memory, Provider, State
+from elizaos.types import Memory, Provider, ProviderResult, State
 
 from elizaos_plugin_whatsapp.types import WhatsAppChatState
 
@@ -16,31 +16,39 @@ WHATSAPP_SERVICE_NAME = "whatsapp"
 async def get_chat_state(
     runtime: Any,
     message: Memory,
-    state: State | None = None,
-) -> str:
+    state: State,
+) -> ProviderResult:
     """Gets the chat state for WhatsApp."""
     service = runtime.get_service(WHATSAPP_SERVICE_NAME)
 
     if not service or not service.is_running:
-        return ""
+        return ProviderResult(text="", values={}, data={})
 
     try:
         room = await runtime.get_room(message.room_id)
         if not room or not room.channel_id:
-            return ""
+            return ProviderResult(text="", values={}, data={})
 
         if room.source != "whatsapp":
-            return ""
+            return ProviderResult(text="", values={}, data={})
 
         chat_state = service.get_chat_state(room.channel_id)
         if not chat_state:
-            return ""
+            return ProviderResult(text="", values={}, data={})
 
-        return _format_chat_state(chat_state)
+        text = _format_chat_state(chat_state)
+        return ProviderResult(
+            text=text,
+            values={"chatState": text},
+            data={
+                "contactWaId": chat_state.contact_wa_id,
+                "phoneNumberId": chat_state.phone_number_id,
+            },
+        )
 
     except Exception as e:
         logger.debug("Failed to get WhatsApp chat state: %s", e)
-        return ""
+        return ProviderResult(text="", values={}, data={})
 
 
 def _format_chat_state(state: WhatsAppChatState) -> str:

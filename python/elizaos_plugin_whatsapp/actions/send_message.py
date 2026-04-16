@@ -3,14 +3,23 @@
 import logging
 from typing import Any
 
-from elizaos.types import Action, ActionExample, Content, Memory, State
+from elizaos.types import (
+    Action,
+    ActionExample,
+    ActionResult,
+    Content,
+    HandlerCallback,
+    HandlerOptions,
+    Memory,
+    State,
+)
 
 logger = logging.getLogger(__name__)
 
 WHATSAPP_SERVICE_NAME = "whatsapp"
 
 
-async def validate(runtime: Any, message: Memory) -> bool:
+async def validate(runtime: Any, message: Memory, state: State | None = None) -> bool:
     """Validates if the action can be executed."""
     service = runtime.get_service(WHATSAPP_SERVICE_NAME)
     return service is not None and service.is_running
@@ -20,19 +29,18 @@ async def handler(
     runtime: Any,
     message: Memory,
     state: State | None = None,
-    options: dict[str, Any] | None = None,
-    callback: Any = None,
-) -> Content | None:
+    options: HandlerOptions | None = None,
+    callback: HandlerCallback | None = None,
+    responses: list[Memory] | None = None,
+) -> ActionResult | None:
     """Handles the send message action."""
     service = runtime.get_service(WHATSAPP_SERVICE_NAME)
 
     if not service or not service.is_running:
         logger.error("WhatsApp service is not available")
         if callback:
-            callback(
-                Content(
-                    text="Sorry, WhatsApp is currently unavailable.",
-                )
+            await callback(
+                Content(text="Sorry, WhatsApp is currently unavailable.", source="whatsapp")
             )
         return None
 
@@ -61,25 +69,29 @@ async def handler(
         content = Content(
             text=text,
             source="whatsapp",
-            metadata={
+            actions=["SEND_WHATSAPP_MESSAGE"],
+            data={
                 "messageId": message_id,
                 "to": room.channel_id,
             },
         )
 
         if callback:
-            callback(content)
+            await callback(content)
 
-        return content
+        return ActionResult(
+            success=True,
+            text=text,
+            data={
+                "messageId": message_id,
+                "to": room.channel_id,
+            },
+        )
 
     except Exception as e:
         logger.error("Failed to send WhatsApp message: %s", e)
         if callback:
-            callback(
-                Content(
-                    text="Failed to send WhatsApp message.",
-                )
-            )
+            await callback(Content(text="Failed to send WhatsApp message.", source="whatsapp"))
         return None
 
 

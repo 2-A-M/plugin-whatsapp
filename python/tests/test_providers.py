@@ -69,5 +69,6 @@ class TestChatStateProviderMetadata:
         from elizaos_plugin_whatsapp.providers.chat_state import chat_state_provider
 
         assert chat_state_provider.name == "WHATSAPP_CHAT_STATE"
+        assert chat_state_provider.description is not None
         assert "WhatsApp" in chat_state_provider.description
         assert chat_state_provider.get is not None

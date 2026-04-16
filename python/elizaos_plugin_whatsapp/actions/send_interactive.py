@@ -6,6 +6,7 @@ from typing import Literal
 
 from elizaos_plugin_whatsapp.client import WhatsAppClient
 from elizaos_plugin_whatsapp.types import (
+    MessageType,
     WhatsAppInteractiveAction,
     WhatsAppInteractiveContent,
     WhatsAppMessage,
@@ -170,7 +171,7 @@ class SendInteractiveAction:
             interactive.footer = {"text": params.footer_text}
 
         message = WhatsAppMessage(
-            type="interactive",
+            type=MessageType.INTERACTIVE,
             to=params.to,
             content=interactive,
         )

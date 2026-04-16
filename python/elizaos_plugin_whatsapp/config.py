@@ -1,9 +1,9 @@
 """Configuration for the WhatsApp plugin."""
 
 import os
-from typing import Self
 
 from pydantic import BaseModel, Field, model_validator
+from typing_extensions import Self
 
 WHATSAPP_API_BASE_URL = "https://graph.facebook.com/v17.0"
 

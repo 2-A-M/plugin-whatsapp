@@ -71,7 +71,7 @@ class MessageHandler:
         Returns:
             Response from WhatsApp API.
         """
-        return await self.client.send_image(to, image_url, caption)
+        return await self.client.send_image(to, link=image_url, caption=caption)
 
     async def send_video(
         self, to: str, video_url: str, caption: str | None = None

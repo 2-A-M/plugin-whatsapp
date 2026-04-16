@@ -6,6 +6,7 @@ from typing import Literal
 
 from elizaos_plugin_whatsapp.client import WhatsAppClient
 from elizaos_plugin_whatsapp.types import (
+    MessageType,
     WhatsAppMediaContent,
     WhatsAppMessage,
     WhatsAppMessageResponse,
@@ -87,7 +88,7 @@ class SendMediaAction:
         )
 
         message = WhatsAppMessage(
-            type=params.media_type,
+            type=MessageType(params.media_type),
             to=params.to,
             content=media_content,
         )

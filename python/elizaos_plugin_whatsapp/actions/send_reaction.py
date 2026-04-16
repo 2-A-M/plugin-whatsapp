@@ -3,8 +3,8 @@
 import logging
 from dataclasses import dataclass
 
-from elizaos_plugin_whatsapp.client import WhatsAppClient
-from elizaos_plugin_whatsapp.types import SendReactionParams, SendReactionResult
+from elizaos_plugin_whatsapp.client import WhatsAppClient, WhatsAppClientError
+from elizaos_plugin_whatsapp.types import WhatsAppMessageResponse
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +106,7 @@ class SendReactionAction:
             return False, "Emoji is required"
         return True, None
 
-    async def handler(self, params: SendReactionActionParams) -> SendReactionResult:
+    async def handler(self, params: SendReactionActionParams) -> WhatsAppMessageResponse:
         """Execute the action.
 
         Args:
@@ -117,32 +117,25 @@ class SendReactionAction:
         """
         is_valid, error = self.validate(params)
         if not is_valid:
-            return SendReactionResult(success=False, error=error)
+            raise ValueError(error)
 
         normalized_emoji = normalize_reaction(params.emoji)
 
-        result = await self.client.send_reaction(
-            SendReactionParams(
-                to=params.to,
-                message_id=params.message_id,
-                emoji=normalized_emoji,
-            )
-        )
-
-        if result.success:
+        try:
+            result = await self.client.send_reaction(params.to, params.message_id, normalized_emoji)
             logger.info(
                 "Sent reaction %s to message %s",
                 normalized_emoji,
                 params.message_id,
             )
-        else:
+            return result
+        except WhatsAppClientError as e:
             logger.error(
                 "Failed to send reaction to message %s: %s",
                 params.message_id,
-                result.error,
+                e,
             )
-
-        return result
+            raise
 
 
 # Action factory

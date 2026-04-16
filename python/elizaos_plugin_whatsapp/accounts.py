@@ -246,20 +246,7 @@ def get_multi_account_config(runtime: AgentRuntime) -> WhatsAppMultiAccountConfi
     wa = _get_character_whatsapp(runtime)
     if not wa:
         return WhatsAppMultiAccountConfig()
-    return WhatsAppMultiAccountConfig(
-        enabled=wa.get("enabled"),
-        accessToken=wa.get("accessToken"),
-        phoneNumberId=wa.get("phoneNumberId"),
-        businessAccountId=wa.get("businessAccountId"),
-        webhookVerifyToken=wa.get("webhookVerifyToken"),
-        apiVersion=wa.get("apiVersion"),
-        dmPolicy=wa.get("dmPolicy"),
-        groupPolicy=wa.get("groupPolicy"),
-        mediaMaxMb=wa.get("mediaMaxMb"),
-        textChunkLimit=wa.get("textChunkLimit"),
-        accounts=wa.get("accounts"),
-        groups=wa.get("groups"),
-    )
+    return WhatsAppMultiAccountConfig.model_validate(wa)
 
 
 # ---------------------------------------------------------------------------
@@ -325,7 +312,7 @@ def _get_account_config(
     direct = accounts.get(account_id)
     if direct:
         if isinstance(direct, dict):
-            return WhatsAppAccountRuntimeConfig(**direct)
+            return WhatsAppAccountRuntimeConfig.model_validate(direct)
         return direct
 
     # Normalized match
@@ -333,7 +320,7 @@ def _get_account_config(
     for key, val in accounts.items():
         if normalize_account_id(key) == normalized:
             if isinstance(val, dict):
-                return WhatsAppAccountRuntimeConfig(**val)
+                return WhatsAppAccountRuntimeConfig.model_validate(val)
             return val
 
     return None
@@ -425,7 +412,7 @@ def _merge_whatsapp_account_config(
         **_filter_defined(account_dict),
     }
 
-    return WhatsAppAccountRuntimeConfig(**merged)
+    return WhatsAppAccountRuntimeConfig.model_validate(merged)
 
 
 # ---------------------------------------------------------------------------
@@ -541,10 +528,10 @@ def is_whatsapp_user_allowed(
     For DMs, checks ``dmPolicy`` and the DM allowlist.
     """
     if is_group:
-        policy = account_config.group_policy or "allowlist"
-        if policy == "disabled":
+        group_policy = account_config.group_policy or "allowlist"
+        if group_policy == "disabled":
             return False
-        if policy == "open":
+        if group_policy == "open":
             return True
 
         # Group-specific allowlist
@@ -555,15 +542,15 @@ def is_whatsapp_user_allowed(
         if account_config.group_allow_from:
             return any(str(a) == identifier for a in account_config.group_allow_from)
 
-        return policy != "allowlist"
+        return group_policy != "allowlist"
 
     # DM handling
-    policy = account_config.dm_policy or "pairing"
-    if policy == "disabled":
+    dm_policy = account_config.dm_policy or "pairing"
+    if dm_policy == "disabled":
         return False
-    if policy == "open":
+    if dm_policy == "open":
         return True
-    if policy == "pairing":
+    if dm_policy == "pairing":
         return True
 
     # Allowlist policy

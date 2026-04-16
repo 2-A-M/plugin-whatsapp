@@ -4,6 +4,8 @@ WhatsApp Cloud API plugin for ElizaOS.
 This plugin provides WhatsApp integration via Meta's Cloud API.
 """
 
+from elizaos.types import Plugin
+
 from elizaos_plugin_whatsapp.actions import send_message_action
 from elizaos_plugin_whatsapp.client import WhatsAppClient
 from elizaos_plugin_whatsapp.config import WhatsAppConfig, get_config_from_env
@@ -38,10 +40,8 @@ __all__ = [
 WHATSAPP_SERVICE_NAME = "whatsapp"
 
 
-def create_plugin():
+def create_plugin() -> Plugin:
     """Creates the WhatsApp plugin with all components."""
-    from elizaos.types import Plugin
-
     return Plugin(
         name=WHATSAPP_SERVICE_NAME,
         description="WhatsApp Cloud API plugin for ElizaOS agents",

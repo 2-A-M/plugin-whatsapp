@@ -13,6 +13,8 @@ from elizaos_plugin_whatsapp.types import (
 
 logger = logging.getLogger(__name__)
 
+EventHandler = Callable[[object], None]
+
 
 class WebhookHandler:
     """Handler for WhatsApp webhook events."""
@@ -26,7 +28,7 @@ class WebhookHandler:
         self.client = client
         self._message_handlers: list[Callable[[WhatsAppIncomingMessage], None]] = []
         self._status_handlers: list[Callable[[WhatsAppStatusUpdate], None]] = []
-        self._event_handlers: dict[WhatsAppEventType, list[Callable]] = {}
+        self._event_handlers: dict[WhatsAppEventType, list[EventHandler]] = {}
 
     def on_message(self, handler: Callable[[WhatsAppIncomingMessage], None]) -> None:
         """Register a handler for incoming messages.
@@ -44,7 +46,7 @@ class WebhookHandler:
         """
         self._status_handlers.append(handler)
 
-    def on_event(self, event_type: WhatsAppEventType, handler: Callable) -> None:
+    def on_event(self, event_type: WhatsAppEventType, handler: EventHandler) -> None:
         """Register a handler for a specific event type.
 
         Args:
@@ -98,7 +100,7 @@ class WebhookHandler:
         # Determine event type based on message type
         if message.reaction:
             event_type = WhatsAppEventType.REACTION_RECEIVED
-        elif message.interactive:
+        elif message.type == "interactive":
             event_type = WhatsAppEventType.INTERACTIVE_REPLY
         else:
             event_type = WhatsAppEventType.MESSAGE_RECEIVED

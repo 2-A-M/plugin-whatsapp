@@ -86,8 +86,7 @@ class TestNormalizeAccountId:
         assert normalize_account_id("  account  ") == "account"
 
     def test_non_string(self) -> None:
-        # noinspection PyTypeChecker
-        assert normalize_account_id(123) == DEFAULT_ACCOUNT_ID  # type: ignore[arg-type]
+        assert normalize_account_id(123) == DEFAULT_ACCOUNT_ID
 
     def test_default_keyword(self) -> None:
         assert normalize_account_id("default") == DEFAULT_ACCOUNT_ID

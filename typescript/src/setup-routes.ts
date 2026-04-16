@@ -55,7 +55,7 @@ interface ConnectorSetupService {
     roomId?: string;
   }): boolean;
   getWorkspaceDir(): string;
-  broadcastWs(data: Record<string, unknown>): void;
+  broadcastWs(data: object): void;
 }
 
 function isConnectorSetupService(service: unknown): service is ConnectorSetupService {
@@ -193,7 +193,7 @@ async function handlePair(
     authDir,
     accountId,
     onEvent: (event: WhatsAppPairingEvent) => {
-      setupService?.broadcastWs(event as unknown as Record<string, unknown>);
+      setupService?.broadcastWs(event);
 
       if (event.status === "connected") {
         if (setupService) {
