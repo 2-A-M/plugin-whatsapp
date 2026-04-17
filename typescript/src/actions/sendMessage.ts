@@ -39,6 +39,7 @@ export const sendMessageAction: Action = {
   name: WHATSAPP_SEND_MESSAGE_ACTION,
   similes: ["SEND_WHATSAPP", "WHATSAPP_MESSAGE", "TEXT_WHATSAPP", "SEND_WHATSAPP_MESSAGE"],
   description: "Send a text message via WhatsApp",
+  descriptionCompressed: "Send WhatsApp text message.",
 
   validate: async (
     _runtime: IAgentRuntime,
