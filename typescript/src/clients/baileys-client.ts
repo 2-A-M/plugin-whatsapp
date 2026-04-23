@@ -58,7 +58,7 @@ export class BaileysClient extends EventEmitter implements IWhatsAppClient {
         if (!maybe.key?.fromMe && maybe.message) {
           this.emit(
             "message",
-            this.adapter.toUnified(message as Parameters<MessageAdapter["toUnified"]>[0])
+            this.adapter.toNormalized(message as Parameters<MessageAdapter["toNormalized"]>[0])
           );
         }
       }

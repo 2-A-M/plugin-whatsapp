@@ -1,13 +1,13 @@
 import type { proto } from "@whiskeysockets/baileys";
 import type {
-  UnifiedMessage,
+  NormalizedMessage,
   WhatsAppMediaMessage,
   WhatsAppMessage,
   WhatsAppTemplate,
 } from "../types";
 
 export class MessageAdapter {
-  toUnified(msg: proto.IWebMessageInfo): UnifiedMessage {
+  toNormalized(msg: proto.IWebMessageInfo): NormalizedMessage {
     const chatId = msg.key?.remoteJid ?? "";
     const senderId = msg.key?.participant ?? chatId;
 

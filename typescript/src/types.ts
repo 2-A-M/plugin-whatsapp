@@ -338,7 +338,7 @@ export interface QRCodeData {
 
 export type ConnectionStatus = "connecting" | "open" | "close";
 
-export interface UnifiedMessage {
+export interface NormalizedMessage {
   id: string;
   from: string;
   timestamp: number;

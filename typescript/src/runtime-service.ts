@@ -20,7 +20,7 @@ import type {
   BaileysConfig,
   CloudAPIConfig,
   ConnectionStatus,
-  UnifiedMessage,
+  NormalizedMessage,
   WhatsAppIncomingMessage,
   WhatsAppMessageResponse,
   WhatsAppWebhookEvent,
@@ -297,8 +297,8 @@ export class WhatsAppConnectorService extends Service {
       }
     });
 
-    client.on("message", (message: UnifiedMessage) => {
-      void this.handleUnifiedMessage(message).catch((error: unknown) => {
+    client.on("message", (message: NormalizedMessage) => {
+      void this.handleNormalizedMessage(message).catch((error: unknown) => {
         this.runtime.logger.error(
           {
             src: "plugin:whatsapp",
@@ -322,7 +322,7 @@ export class WhatsAppConnectorService extends Service {
     });
   }
 
-  private async handleUnifiedMessage(message: UnifiedMessage): Promise<void> {
+  private async handleNormalizedMessage(message: NormalizedMessage): Promise<void> {
     const chatId = message.chatId ?? message.from;
     const senderId = message.senderId ?? message.from;
     const text = typeof message.content === "string" ? message.content.trim() : "";
