@@ -9,10 +9,7 @@ declare module "qrcode" {
   }
 
   export interface QRCodeModule {
-    toDataURL(
-      text: string,
-      options?: QRCodeToDataURLOptions,
-    ): Promise<string>;
+    toDataURL(text: string, options?: QRCodeToDataURLOptions): Promise<string>;
   }
 
   const QRCode: QRCodeModule;
