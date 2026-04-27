@@ -11,8 +11,10 @@ import { checkWhatsAppUserAccess } from "./accounts";
 import { WhatsAppClient } from "./client";
 import { BaileysClient } from "./clients/baileys-client";
 import {
+  buildWhatsAppUserJid,
   chunkWhatsAppText,
   isWhatsAppGroupJid,
+  isWhatsAppUserTarget,
   normalizeWhatsAppTarget,
   resolveWhatsAppSystemLocation,
 } from "./normalize";
@@ -132,6 +134,14 @@ function toTimestampMs(value: number | string | undefined): number {
 
 function toMemoryId(runtime: IAgentRuntime, chatId: string, messageId: string): UUID {
   return createUniqueUuid(runtime, `whatsapp:${chatId}:${messageId}`) as UUID;
+}
+
+function normalizeBaileysSendTarget(target: string): string {
+  if (isWhatsAppGroupJid(target) || isWhatsAppUserTarget(target)) {
+    return target;
+  }
+  const normalized = normalizeWhatsAppTarget(target);
+  return normalized ? buildWhatsAppUserJid(normalized) : target;
 }
 
 function extractWebhookText(message: WhatsAppIncomingMessage): string {
@@ -534,7 +544,9 @@ export class WhatsAppConnectorService extends Service {
     const response = await this.client.sendMessage({
       type: "text",
       to:
-        this.config.transport === "baileys" ? chatId : (normalizeWhatsAppTarget(chatId) ?? chatId),
+        this.config.transport === "baileys"
+          ? normalizeBaileysSendTarget(chatId)
+          : (normalizeWhatsAppTarget(chatId) ?? chatId),
       content: text,
       replyToMessageId,
     });
@@ -542,5 +554,14 @@ export class WhatsAppConnectorService extends Service {
     return "data" in response
       ? (response.data as WhatsAppMessageResponse)
       : (response as WhatsAppMessageResponse);
+  }
+
+  async sendMessage(message: {
+    type: "text";
+    to: string;
+    content: string;
+    replyToMessageId?: string;
+  }): Promise<WhatsAppMessageResponse> {
+    return this.sendTextMessage(message.to, message.content, message.replyToMessageId);
   }
 }
