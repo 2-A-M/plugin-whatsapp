@@ -40,6 +40,7 @@ export const sendMessageAction: Action = {
   similes: ["SEND_WHATSAPP", "WHATSAPP_MESSAGE", "TEXT_WHATSAPP", "SEND_WHATSAPP_MESSAGE"],
   description: "Send a text message via WhatsApp",
   descriptionCompressed: "Send WhatsApp text message.",
+  suppressPostActionContinuation: true,
 
   validate: async (
     _runtime: IAgentRuntime,
@@ -168,19 +169,14 @@ export const sendMessageAction: Action = {
       };
       const messageId = data.messages?.[0]?.id;
 
-      if (callback) {
-        await callback({
-          text: `Message sent to ${params.to}`,
-          action: WHATSAPP_SEND_MESSAGE_ACTION,
-        });
-      }
-
       return {
         success: true,
         data: {
           action: WHATSAPP_SEND_MESSAGE_ACTION,
           to: params.to,
           messageId,
+          suppressVisibleCallback: true,
+          suppressActionResultClipboard: true,
         },
       };
     } catch (error) {

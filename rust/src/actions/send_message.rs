@@ -60,10 +60,11 @@ impl SendMessageAction {
                 info!("Sent WhatsApp message: {:?}", message_id);
 
                 Ok(Some(serde_json::json!({
-                    "text": text,
                     "source": "whatsapp",
                     "messageId": message_id,
                     "to": channel_id,
+                    "suppressVisibleCallback": true,
+                    "suppressActionResultClipboard": true,
                 })))
             }
             Err(e) => {

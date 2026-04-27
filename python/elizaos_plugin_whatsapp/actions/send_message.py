@@ -49,7 +49,7 @@ async def handler(
         if not room or not room.channel_id:
             logger.error("No channel ID found for room")
             if callback:
-                callback(
+                await callback(
                     Content(
                         text="Unable to determine the message recipient.",
                     )
@@ -66,25 +66,13 @@ async def handler(
 
         logger.info("Sent WhatsApp message: %s", message_id)
 
-        content = Content(
-            text=text,
-            source="whatsapp",
-            actions=["SEND_WHATSAPP_MESSAGE"],
-            data={
-                "messageId": message_id,
-                "to": room.channel_id,
-            },
-        )
-
-        if callback:
-            await callback(content)
-
         return ActionResult(
             success=True,
-            text=text,
             data={
                 "messageId": message_id,
                 "to": room.channel_id,
+                "suppressVisibleCallback": True,
+                "suppressActionResultClipboard": True,
             },
         )
 

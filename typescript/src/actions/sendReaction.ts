@@ -40,6 +40,7 @@ export const sendReactionAction: Action = {
   similes: ["WHATSAPP_REACT", "REACT_WHATSAPP", "WHATSAPP_EMOJI"],
   description: "Send a reaction emoji to a WhatsApp message",
   descriptionCompressed: "React to WhatsApp message with emoji.",
+  suppressPostActionContinuation: true,
 
   validate: async (
     _runtime: IAgentRuntime,
@@ -152,19 +153,14 @@ export const sendReactionAction: Action = {
         throw new Error(errorData.error?.message || `HTTP ${response.status}`);
       }
 
-      if (callback) {
-        await callback({
-          text: `Reacted with ${params.emoji}`,
-          action: WHATSAPP_SEND_REACTION_ACTION,
-        });
-      }
-
       return {
         success: true,
         data: {
           action: WHATSAPP_SEND_REACTION_ACTION,
           messageId: params.messageId,
           emoji: params.emoji,
+          suppressVisibleCallback: true,
+          suppressActionResultClipboard: true,
         },
       };
     } catch (error) {
