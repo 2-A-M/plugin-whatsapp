@@ -406,6 +406,7 @@ export class WhatsAppConnectorService extends Service {
     await this.runtime.ensureConnection({
       entityId,
       roomId,
+      userId: normalizedSender as unknown as UUID,
       userName: normalizedSender,
       name: normalizedSender,
       source: "whatsapp",
@@ -437,9 +438,33 @@ export class WhatsAppConnectorService extends Service {
       },
       metadata: {
         type: "message",
+        source: "whatsapp",
+        provider: "whatsapp",
+        timestamp: params.createdAt,
+        entityName: normalizedSender,
+        entityUserName: normalizedSender,
+        fromBot: false,
+        fromId: normalizedSender,
+        sourceId: entityId,
+        chatType: channelType,
+        messageIdFull: params.externalMessageId,
+        sender: {
+          id: normalizedSender,
+          name: normalizedSender,
+          username: normalizedSender,
+        },
+        whatsapp: {
+          id: normalizedSender,
+          userId: normalizedSender,
+          username: normalizedSender,
+          userName: normalizedSender,
+          name: normalizedSender,
+          chatId: params.chatId,
+          messageId: params.externalMessageId,
+        },
         rawChatId: params.chatId,
         rawSenderId: params.senderId,
-      },
+      } as unknown as Memory["metadata"],
       createdAt: params.createdAt,
     };
 
@@ -472,9 +497,21 @@ export class WhatsAppConnectorService extends Service {
           },
           metadata: {
             type: "message",
+            source: "whatsapp",
+            provider: "whatsapp",
+            timestamp: Date.now(),
+            fromBot: true,
+            fromId: this.runtime.agentId,
+            sourceId: this.runtime.agentId,
+            chatType: channelType,
+            messageIdFull: externalResponseId,
+            whatsapp: {
+              chatId: params.chatId,
+              messageId: externalResponseId,
+            },
             rawChatId: params.chatId,
             externalMessageId: externalResponseId,
-          },
+          } as unknown as Memory["metadata"],
           createdAt: Date.now(),
         });
       }
