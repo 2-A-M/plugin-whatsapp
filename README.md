@@ -56,27 +56,26 @@ elizaos-plugin-whatsapp = "2.0.0-alpha.1"
 
 ### TypeScript Configuration
 
-```typescript
-import { WhatsAppPlugin } from '@elizaos/plugin-whatsapp';
+The plugin self-registers `WhatsAppConnectorService` on the elizaOS runtime and reads its config from runtime settings / environment variables — no manual construction is required. Just register the default export on your character/agent:
 
-const plugin = new WhatsAppPlugin({
-    accessToken: process.env.WHATSAPP_ACCESS_TOKEN!,
-    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID!,
-    webhookVerifyToken: process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN,
-    apiVersion: 'v24.0',
-});
+```typescript
+import whatsappPlugin from "@elizaos/plugin-whatsapp";
+
+export const character = {
+  // ...
+  plugins: [whatsappPlugin],
+};
 ```
 
-### TypeScript Configuration (Baileys / QR)
+The service picks up `WHATSAPP_ACCESS_TOKEN` + `WHATSAPP_PHONE_NUMBER_ID` (Cloud API) or `WHATSAPP_AUTH_DIR` (Baileys / QR) automatically. See the env-var table above.
+
+To access the service at runtime (e.g. to send a message from your own code):
 
 ```typescript
-import { WhatsAppPlugin } from "@elizaos/plugin-whatsapp";
+import type { WhatsAppConnectorService } from "@elizaos/plugin-whatsapp";
 
-const plugin = new WhatsAppPlugin({
-  authMethod: "baileys",
-  authDir: "./whatsapp-auth",
-  printQRInTerminal: true,
-});
+const service = runtime.getService<WhatsAppConnectorService>("whatsapp");
+await service?.sendMessage({ to: "+14155552671", text: "hello" });
 ```
 
 ### Python Configuration
