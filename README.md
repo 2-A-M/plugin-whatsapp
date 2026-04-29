@@ -128,7 +128,7 @@ let service = WhatsAppService::new(config);
 The TypeScript snippets below use two variables:
 
 - `service` — the registered `WhatsAppConnectorService`, obtained via `runtime.getService<WhatsAppConnectorService>("whatsapp")`. This is the recommended path: it routes through the same auth + policy stack the agent uses for incoming messages.
-- `client` — the underlying low-level `WhatsAppClient` (Cloud API only). Use this only for advanced media APIs not exposed on the service. Construct one directly with `new WhatsAppClient({ accessToken, phoneNumberId })` if you need it.
+- `client` — the underlying low-level client (`IWhatsAppClient`), used only for advanced media APIs not exposed on the service. Construct one with the exported `ClientFactory.create({ accessToken, phoneNumberId })` (Cloud API) or `ClientFactory.create({ authDir })` (Baileys) — the concrete `WhatsAppClient` / `BaileysClient` classes are internal.
 
 #### Text Message
 
