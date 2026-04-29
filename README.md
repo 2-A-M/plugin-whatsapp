@@ -52,7 +52,12 @@ elizaos-plugin-whatsapp = "2.0.0-alpha.1"
 | `WHATSAPP_API_VERSION` | No | Graph API version (default: v24.0) |
 | `WHATSAPP_AUTH_METHOD` | No | `cloudapi` or `baileys` (auto-detected if omitted) |
 | `WHATSAPP_AUTH_DIR` | No | Path for Baileys multi-file auth state |
+| `WHATSAPP_SESSION_PATH` | No | Alternative to `WHATSAPP_AUTH_DIR` for Baileys auth state |
 | `WHATSAPP_PRINT_QR` | No | Print QR in terminal for Baileys auth (default: true) |
+| `WHATSAPP_DM_POLICY` | No | DM handling policy: `open`, `allowlist`, `pairing`, or `disabled` |
+| `WHATSAPP_GROUP_POLICY` | No | Group handling policy: `open`, `allowlist`, or `disabled` |
+| `WHATSAPP_ALLOW_FROM` | No | Comma-separated allowlist for DM senders (when DM policy is `allowlist`) |
+| `WHATSAPP_GROUP_ALLOW_FROM` | No | Comma-separated allowlist for group senders (when group policy is `allowlist`) |
 
 ### TypeScript Configuration
 
@@ -75,7 +80,7 @@ To access the service at runtime (e.g. to send a message from your own code):
 import type { WhatsAppConnectorService } from "@elizaos/plugin-whatsapp";
 
 const service = runtime.getService<WhatsAppConnectorService>("whatsapp");
-await service?.sendMessage({ to: "+14155552671", text: "hello" });
+await service?.sendMessage({ type: "text", to: "+14155552671", content: "hello" });
 ```
 
 ### Python Configuration
