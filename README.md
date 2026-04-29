@@ -125,11 +125,17 @@ let service = WhatsAppService::new(config);
 
 ### Sending Messages
 
+The TypeScript snippets below use two variables:
+
+- `service` — the registered `WhatsAppConnectorService`, obtained via `runtime.getService<WhatsAppConnectorService>("whatsapp")`. This is the recommended path: it routes through the same auth + policy stack the agent uses for incoming messages.
+- `client` — the underlying low-level `WhatsAppClient` (Cloud API only). Use this only for advanced media APIs not exposed on the service. Construct one directly with `new WhatsAppClient({ accessToken, phoneNumberId })` if you need it.
+
 #### Text Message
 
 **TypeScript**:
 ```typescript
-await client.sendTextMessage('1234567890', 'Hello, World!');
+const service = runtime.getService<WhatsAppConnectorService>("whatsapp");
+await service?.sendMessage({ type: "text", to: "1234567890", content: "Hello, World!" });
 ```
 
 **Python**:
@@ -256,14 +262,17 @@ import express from 'express';
 
 const app = express();
 
+const service = runtime.getService<WhatsAppConnectorService>("whatsapp");
+
 // Verification endpoint
 app.get('/webhook', (req, res) => {
-    const mode = req.query['hub.mode'];
-    const token = req.query['hub.verify_token'];
-    const challenge = req.query['hub.challenge'];
-    
-    if (mode === 'subscribe' && plugin.verifyWebhook(token)) {
-        res.status(200).send(challenge);
+    const mode = String(req.query['hub.mode'] ?? '');
+    const token = String(req.query['hub.verify_token'] ?? '');
+    const challenge = String(req.query['hub.challenge'] ?? '');
+
+    const reply = service?.verifyWebhook(mode, token, challenge);
+    if (reply) {
+        res.status(200).send(reply);
     } else {
         res.sendStatus(403);
     }
@@ -271,7 +280,7 @@ app.get('/webhook', (req, res) => {
 
 // Message handling endpoint
 app.post('/webhook', express.json(), async (req, res) => {
-    await plugin.handleWebhook(req.body);
+    await service?.handleWebhook(req.body);
     res.sendStatus(200);
 });
 ```
